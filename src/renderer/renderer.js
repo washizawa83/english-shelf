@@ -1,6 +1,6 @@
 const configs = {
   words: { singular: '単語', heading: '単語一覧', template: 'word-fields', primary: 'vocabulary', secondary: 'meaning', detail: 'example' },
-  sentences: { singular: '英文・文法', heading: '英文・文法一覧', template: 'sentence-fields', primary: 'title', secondary: 'meaning', detail: 'similar_sentences' }
+  sentences: { singular: '英文', heading: '英文一覧', template: 'sentence-fields', primary: 'title', secondary: 'meaning', detail: 'similar_sentences' }
 };
 let kind = 'words';
 let editingId = null;
@@ -89,7 +89,7 @@ function renderForgettingDistribution(words, sentences) {
   document.querySelector('#forgetting-distribution-chart').innerHTML = wordCounts.map((wordCount, index) => {
     const sentenceCount = sentenceCounts[index];
     const level = index + 1;
-    return `<div class="level-group"><div class="bar-pair"><div class="bar-column"><span>${wordCount}</span><i class="distribution-bar word-bar" style="height:${(wordCount / maximum) * 100}%" aria-label="レベル${level} 単語 ${wordCount}件"></i></div><div class="bar-column"><span>${sentenceCount}</span><i class="distribution-bar sentence-bar" style="height:${(sentenceCount / maximum) * 100}%" aria-label="レベル${level} 英文・文法 ${sentenceCount}件"></i></div></div><strong>Lv.${level}</strong></div>`;
+    return `<div class="level-group"><div class="bar-pair"><div class="bar-column"><span>${wordCount}</span><i class="distribution-bar word-bar" style="height:${(wordCount / maximum) * 100}%" aria-label="レベル${level} 単語 ${wordCount}件"></i></div><div class="bar-column"><span>${sentenceCount}</span><i class="distribution-bar sentence-bar" style="height:${(sentenceCount / maximum) * 100}%" aria-label="レベル${level} 英文 ${sentenceCount}件"></i></div></div><strong>Lv.${level}</strong></div>`;
   }).join('');
 }
 
@@ -267,8 +267,8 @@ async function refreshCurriculum() {
     const mastery = Math.max(0, Math.min(100, Number(unit.mastery_percent) || 0));
     const relations = unit.grammar_items.length
       ? unit.grammar_items.map(item => `<div class="relation-row"><span>${escapeHtml(item.title)}</span><button data-action="open" data-grammar-id="${item.id}">開く</button></div>`).join('')
-      : '<small>関連する英文・文法はまだありません。</small>';
-    return `<article class="curriculum-card" data-unit-id="${unit.id}" role="button" tabindex="0"><div class="curriculum-card-head"><div><span class="order-badge">UNIT ${index + 1}</span><h3>${escapeHtml(unit.title)}</h3></div><span class="mastery-badge">理解度 ${mastery}%</span></div><div class="mastery-track" aria-label="理解度 ${mastery}%"><span style="width:${mastery}%"></span></div><p class="curriculum-objective">${escapeHtml(unit.learning_objective) || '学習目標は未設定です。'}</p><div class="relations"><strong>関連する英文・文法</strong>${relations}</div><span class="detail-link">詳しく学ぶ →</span></article>`;
+      : '<small>関連する英文はまだありません。</small>';
+    return `<article class="curriculum-card" data-unit-id="${unit.id}" role="button" tabindex="0"><div class="curriculum-card-head"><div><span class="order-badge">UNIT ${index + 1}</span><h3>${escapeHtml(unit.title)}</h3></div><span class="mastery-badge">理解度 ${mastery}%</span></div><div class="mastery-track" aria-label="理解度 ${mastery}%"><span style="width:${mastery}%"></span></div><p class="curriculum-objective">${escapeHtml(unit.learning_objective) || '学習目標は未設定です。'}</p><div class="relations"><strong>関連する英文</strong>${relations}</div><span class="detail-link">詳しく学ぶ →</span></article>`;
   }).join('');
 }
 
@@ -293,11 +293,11 @@ function showCurriculumDetail(unitId) {
     : '<p class="detail-empty">ミニ練習はまだ登録されていません。</p>';
   const related = unit.grammar_items.length
     ? `<div class="related-notes">${unit.grammar_items.map(item => `<button data-detail-grammar-id="${item.id}"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.meaning)}</span></button>`).join('')}</div>`
-    : '<p class="detail-empty">関連する英文・文法メモは未登録です。</p>';
+    : '<p class="detail-empty">関連する英文メモは未登録です。</p>';
   const unitLogs = unit.study_logs?.length
     ? `<div class="unit-study-log-list">${unit.study_logs.map(log => `<button data-detail-log-id="${log.id}"><time>${escapeHtml(formatRecordedAt(log.recorded_at))}</time><strong>${escapeHtml(log.title)}</strong></button>`).join('')}</div>`
     : '<p class="detail-empty">この単元に関連する学習記録はありません。</p>';
-  curriculumDetail.innerHTML = `<header class="detail-header"><div><p class="eyebrow">UNIT ${unit.sort_order}</p><h2>${escapeHtml(unit.title)}</h2></div><span class="mastery-badge">理解度 ${mastery}%</span></header><div class="detail-mastery"><div class="mastery-track" aria-label="理解度 ${mastery}%"><span style="width:${mastery}%"></span></div></div><section><h3><span>01</span>この単元でできるようになること</h3><p>${escapeHtml(unit.learning_objective) || '学習目標は未設定です。'}</p></section><section><h3><span>02</span>まず知ること</h3><p>${escapeHtml(details.basics) || '基礎説明はまだ登録されていません。'}</p></section><section><h3><span>03</span>形・ルール</h3>${rules}</section><section><h3><span>04</span>例文</h3>${examples}</section><section><h3><span>05</span>ミニ練習</h3>${practice}</section><section><h3><span>06</span>仕上げ</h3><div class="finish-status"><span>現在の理解度</span><strong>${mastery}%</strong></div><div class="finish-guide"><p>AIに「この単元の仕上げを始めたい」と伝えてください。</p><ol><li>AIがこの単元を参照し、10問を1問ずつ出題します。</li><li>回答ごとに正誤と短い解説を伝えます。</li><li>最後に結果と苦手ポイントをまとめ、正答数 × 10を目安に理解度を更新します。</li></ol></div></section><section><h3><span>07</span>関連する英文・文法メモ</h3>${related}<div class="unit-study-logs"><h4>この単元の学習記録</h4>${unitLogs}</div></section>`;
+  curriculumDetail.innerHTML = `<header class="detail-header"><div><p class="eyebrow">UNIT ${unit.sort_order}</p><h2>${escapeHtml(unit.title)}</h2></div><span class="mastery-badge">理解度 ${mastery}%</span></header><div class="detail-mastery"><div class="mastery-track" aria-label="理解度 ${mastery}%"><span style="width:${mastery}%"></span></div></div><section><h3><span>01</span>この単元でできるようになること</h3><p>${escapeHtml(unit.learning_objective) || '学習目標は未設定です。'}</p></section><section><h3><span>02</span>まず知ること</h3><p>${escapeHtml(details.basics) || '基礎説明はまだ登録されていません。'}</p></section><section><h3><span>03</span>形・ルール</h3>${rules}</section><section><h3><span>04</span>例文</h3>${examples}</section><section><h3><span>05</span>ミニ練習</h3>${practice}</section><section><h3><span>06</span>仕上げ</h3><div class="finish-status"><span>現在の理解度</span><strong>${mastery}%</strong></div><div class="finish-guide"><p>AIに「この単元の仕上げを始めたい」と伝えてください。</p><ol><li>AIがこの単元を参照し、10問を1問ずつ出題します。</li><li>回答ごとに正誤と短い解説を伝えます。</li><li>最後に結果と苦手ポイントをまとめ、正答数 × 10を目安に理解度を更新します。</li></ol></div></section><section><h3><span>07</span>関連する英文メモ</h3>${related}<div class="unit-study-logs"><h4>この単元の学習記録</h4>${unitLogs}</div></section>`;
   document.querySelector('#curriculum-view').hidden = true;
   curriculumDetailView.hidden = false;
   window.scrollTo({ top: 0, behavior: 'smooth' });

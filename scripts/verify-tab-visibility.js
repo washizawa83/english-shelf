@@ -368,7 +368,7 @@ app.whenReady().then(async () => {
     && result.detailHeadings[3] === '04例文'
     && result.detailHeadings[4] === '05ミニ練習'
     && result.detailHeadings[5] === '06仕上げ'
-    && result.detailHeadings[6] === '07関連する英文・文法メモ'
+    && result.detailHeadings[6] === '07関連する英文メモ'
     && result.exampleCount === 5
     && result.practiceCount === 5
     && result.hintCount === 5

@@ -27,6 +27,12 @@ test('main views preserve stable ids and tab routing', () => {
   assert.match(app, /view !== 'curriculum-detail'/);
 });
 
+test('sentence-facing copy consistently uses 英文', () => {
+  assert.doesNotMatch(app, /英文・文法|英文文法/);
+  assert.match(app, /sentences: \{ singular: '英文', heading: '英文一覧'/);
+  assert.match(app, /<Label>英文<Textarea name="title"/);
+});
+
 test('summary retains metrics, review distribution, progress, and activity graph', () => {
   for (const id of ['summary-word-count', 'summary-sentence-count', 'summary-unit-count', 'summary-mastery-average', 'summary-started-count', 'summary-completed-count', 'summary-progress-label', 'summary-mastery-bar', 'forgetting-distribution-chart', 'study-activity-grid']) {
     assert.match(app, new RegExp(id));

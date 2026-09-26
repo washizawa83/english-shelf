@@ -344,7 +344,7 @@ class StudyDatabase {
 
   linkGrammarItem(unitId, grammarItemId) {
     if (!this.getCurriculumUnit(unitId)) throw new Error('単元が見つかりません');
-    if (!this.get('sentences', grammarItemId)) throw new Error('英文・文法項目が見つかりません');
+    if (!this.get('sentences', grammarItemId)) throw new Error('英文項目が見つかりません');
     this.db.prepare('INSERT OR IGNORE INTO curriculum_unit_grammar_items (unit_id, grammar_item_id) VALUES (?, ?)').run(Number(unitId), Number(grammarItemId));
     return this.getCurriculumUnit(unitId);
   }

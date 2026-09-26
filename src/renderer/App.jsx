@@ -11,7 +11,7 @@ import webApi from './web-api';
 const api = window.studyApi || webApi;
 const configs = {
   words: { singular: '単語', heading: '単語一覧', primary: 'vocabulary', secondary: 'meaning', detail: 'example' },
-  sentences: { singular: '英文・文法', heading: '英文・文法一覧', primary: 'title', secondary: 'meaning', detail: 'similar_sentences' }
+  sentences: { singular: '英文', heading: '英文一覧', primary: 'title', secondary: 'meaning', detail: 'similar_sentences' }
 };
 const tabs = [
   { id: 'summary', label: 'サマリ', Icon: LayoutDashboard },
@@ -81,7 +81,7 @@ function Summary({ hidden, words, sentences, units, logs, loadError, selectedDat
   const completed = units.filter(unit => Number(unit.mastery_percent) === 100).length;
   const wordCounts = forgettingLevelCounts(words), sentenceCounts = forgettingLevelCounts(sentences);
   const maximum = Math.max(1, ...wordCounts, ...sentenceCounts);
-  const cards = [['単語', words.length, '登録済み', 'summary-word-count'], ['英文・文法', sentences.length, '登録済み', 'summary-sentence-count'], ['カリキュラム', units.length, '単元', 'summary-unit-count'], ['平均理解度', `${average}%`, '全単元', 'summary-mastery-average'], ['学習開始済み', started, '単元', 'summary-started-count'], ['完了', completed, '理解度100%の単元', 'summary-completed-count']];
+  const cards = [['単語', words.length, '登録済み', 'summary-word-count'], ['英文', sentences.length, '登録済み', 'summary-sentence-count'], ['カリキュラム', units.length, '単元', 'summary-unit-count'], ['平均理解度', `${average}%`, '全単元', 'summary-mastery-average'], ['学習開始済み', started, '単元', 'summary-started-count'], ['完了', completed, '理解度100%の単元', 'summary-completed-count']];
   return <section className="summary-view" id="summary-view" hidden={hidden}>
     <div className="summary-hero"><p>積み重ねた内容と、次に復習するものをひと目で確認できます。</p><Button id="start-review" className="review-start" onClick={onReview}><Sparkles size={17} />復習をはじめる</Button></div>
     {loadError && <div className="migration-notice" role="alert"><Database size={18} /><div><strong>Supabaseデータを表示できません</strong><p>{loadError}</p></div></div>}
@@ -92,8 +92,8 @@ function Summary({ hidden, words, sentences, units, logs, loadError, selectedDat
       <div className="summary-progress-caption"><span><b id="summary-progress-started">{started}</b> 開始済み</span><span><b id="summary-progress-completed">{completed}</b> 完了</span><span><b id="summary-progress-total">{units.length}</b> 全単元</span></div>
     </section>
     <section className="summary-panel forgetting-panel">
-      <div className="summary-panel-heading"><div><p className="eyebrow">REVIEW LEVELS</p><h2>忘却レベルの分布</h2></div><div className="distribution-legend"><span><i className="word-swatch" />単語</span><span><i className="sentence-swatch" />英文・文法</span></div></div>
-      <div id="forgetting-distribution-chart" className="forgetting-chart" aria-label="単語と英文・文法の忘却レベル分布">{wordCounts.map((wordCount, index) => <div className="level-group" key={index}><div className="bar-pair"><div className="bar-column"><span>{wordCount}</span><i className="distribution-bar word-bar" style={{ height: `${(wordCount / maximum) * 100}%` }} aria-label={`レベル${index + 1} 単語 ${wordCount}件`} /></div><div className="bar-column"><span>{sentenceCounts[index]}</span><i className="distribution-bar sentence-bar" style={{ height: `${(sentenceCounts[index] / maximum) * 100}%` }} aria-label={`レベル${index + 1} 英文・文法 ${sentenceCounts[index]}件`} /></div></div><strong>Lv.{index + 1}</strong></div>)}</div>
+      <div className="summary-panel-heading"><div><p className="eyebrow">REVIEW LEVELS</p><h2>忘却レベルの分布</h2></div><div className="distribution-legend"><span><i className="word-swatch" />単語</span><span><i className="sentence-swatch" />英文</span></div></div>
+      <div id="forgetting-distribution-chart" className="forgetting-chart" aria-label="単語と英文の忘却レベル分布">{wordCounts.map((wordCount, index) => <div className="level-group" key={index}><div className="bar-pair"><div className="bar-column"><span>{wordCount}</span><i className="distribution-bar word-bar" style={{ height: `${(wordCount / maximum) * 100}%` }} aria-label={`レベル${index + 1} 単語 ${wordCount}件`} /></div><div className="bar-column"><span>{sentenceCounts[index]}</span><i className="distribution-bar sentence-bar" style={{ height: `${(sentenceCounts[index] / maximum) * 100}%` }} aria-label={`レベル${index + 1} 英文 ${sentenceCounts[index]}件`} /></div></div><strong>Lv.{index + 1}</strong></div>)}</div>
     </section>
     <ActivityGraph logs={logs} selectedDate={selectedDate} onSelect={onSelectDate} />
   </section>;
@@ -108,7 +108,7 @@ function EntryFields({ kind, form, setForm, editing }) {
       <Label>意味<Textarea name="meaning" rows={3} value={form.meaning || ''} onChange={e => field('meaning', e.target.value)} /></Label>
       <Label>例文<Textarea name="example" rows={4} value={form.example || ''} onChange={e => field('example', e.target.value)} /></Label>
     </> : <>
-      <Label>英文・文法<Textarea name="title" required rows={4} value={form.title || ''} onChange={e => field('title', e.target.value)} /></Label>
+      <Label>英文<Textarea name="title" required rows={4} value={form.title || ''} onChange={e => field('title', e.target.value)} /></Label>
       <Label>意味<Textarea name="meaning" rows={3} value={form.meaning || ''} onChange={e => field('meaning', e.target.value)} /></Label>
       <Label>類似の英文<Textarea name="similar_sentences" rows={3} value={form.similar_sentences || ''} onChange={e => field('similar_sentences', e.target.value)} /></Label>
     </>}
@@ -159,7 +159,7 @@ function Library({ hidden, kind, entries, search, onSearch, status, onAdd, onEdi
 function CurriculumList({ hidden, units, onOpenUnit, onOpenGrammar }) {
   return <section className="curriculum-view" id="curriculum-view" hidden={hidden}><section className="list-panel"><div className="view-status-row"><span id="curriculum-status" className="status">{units.length} 単元</span></div><div id="curriculum-list" className="curriculum-list">{units.length ? units.map((unit, index) => {
     const mastery = Math.max(0, Math.min(100, Number(unit.mastery_percent) || 0));
-    return <article className="curriculum-card" data-unit-id={unit.id} role="button" tabIndex={0} key={unit.id} onClick={() => onOpenUnit(unit.id)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpenUnit(unit.id); } }}><div className="curriculum-card-head"><div><span className="order-badge">UNIT {index + 1}</span><h3>{unit.title}</h3></div><span className="mastery-badge">理解度 {mastery}%</span></div><div className="mastery-track" aria-label={`理解度 ${mastery}%`}><span style={{ width: `${mastery}%` }} /></div><p className="curriculum-objective">{unit.learning_objective || '学習目標は未設定です。'}</p><div className="relations"><strong>関連する英文・文法</strong>{unit.grammar_items.length ? unit.grammar_items.map(item => <div className="relation-row" key={item.id}><span>{item.title}</span><Button variant="outline" size="sm" data-action="open" data-grammar-id={item.id} onClick={event => { event.stopPropagation(); onOpenGrammar(item.id); }}>開く</Button></div>) : <small>関連する英文・文法はまだありません。</small>}</div><span className="detail-link">詳しく学ぶ →</span></article>;
+    return <article className="curriculum-card" data-unit-id={unit.id} role="button" tabIndex={0} key={unit.id} onClick={() => onOpenUnit(unit.id)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpenUnit(unit.id); } }}><div className="curriculum-card-head"><div><span className="order-badge">UNIT {index + 1}</span><h3>{unit.title}</h3></div><span className="mastery-badge">理解度 {mastery}%</span></div><div className="mastery-track" aria-label={`理解度 ${mastery}%`}><span style={{ width: `${mastery}%` }} /></div><p className="curriculum-objective">{unit.learning_objective || '学習目標は未設定です。'}</p><div className="relations"><strong>関連する英文</strong>{unit.grammar_items.length ? unit.grammar_items.map(item => <div className="relation-row" key={item.id}><span>{item.title}</span><Button variant="outline" size="sm" data-action="open" data-grammar-id={item.id} onClick={event => { event.stopPropagation(); onOpenGrammar(item.id); }}>開く</Button></div>) : <small>関連する英文はまだありません。</small>}</div><span className="detail-link">詳しく学ぶ →</span></article>;
   }) : <div className="empty">まだ単元が登録されていません。</div>}</div></section></section>;
 }
 
@@ -175,7 +175,7 @@ function CurriculumDetail({ hidden, unit, onBack, onOpenGrammar, onOpenLog }) {
     <Section number="04" title="例文">{details.examples?.length ? <div className="example-list">{details.examples.map((item, index) => <div className="example-item" key={index}><span>{index + 1}</span><div><strong>{item.english}</strong><p>{item.japanese}</p></div></div>)}</div> : <p className="detail-empty">例文はまだ登録されていません。</p>}</Section>
     <Section number="05" title="ミニ練習">{details.practice?.length ? <div className="practice-list">{details.practice.map((item, index) => <div className="practice-item" key={index}><p>{item.question || ''}</p>{item.hint && <details className="hint-details"><summary>ヒント</summary><p>{item.hint}</p></details>}{item.answer && <details className="answer-details"><summary>答えを見る</summary><p>{item.answer}</p></details>}</div>)}</div> : <p className="detail-empty">ミニ練習はまだ登録されていません。</p>}</Section>
     <Section number="06" title="仕上げ"><div className="finish-status"><span>現在の理解度</span><strong>{mastery}%</strong></div><div className="finish-guide"><p>AIに「この単元の仕上げを始めたい」と伝えてください。</p><ol><li>AIがこの単元を参照し、10問を1問ずつ出題します。</li><li>回答ごとに正誤と短い解説を伝えます。</li><li>最後に結果と苦手ポイントをまとめ、正答数 × 10を目安に理解度を更新します。</li></ol></div></Section>
-    <Section number="07" title="関連する英文・文法メモ">{unit.grammar_items.length ? <div className="related-notes">{unit.grammar_items.map(item => <Button variant="outline" key={item.id} data-detail-grammar-id={item.id} onClick={() => onOpenGrammar(item.id)}><strong>{item.title}</strong><span>{item.meaning}</span></Button>)}</div> : <p className="detail-empty">関連する英文・文法メモは未登録です。</p>}<div className="unit-study-logs"><h4>この単元の学習記録</h4>{unit.study_logs?.length ? <div className="unit-study-log-list">{unit.study_logs.map(log => <Button variant="outline" key={log.id} data-detail-log-id={log.id} onClick={() => onOpenLog(log.id)}><time>{formatRecordedAt(log.recorded_at)}</time><strong>{log.title}</strong></Button>)}</div> : <p className="detail-empty">この単元に関連する学習記録はありません。</p>}</div></Section>
+    <Section number="07" title="関連する英文メモ">{unit.grammar_items.length ? <div className="related-notes">{unit.grammar_items.map(item => <Button variant="outline" key={item.id} data-detail-grammar-id={item.id} onClick={() => onOpenGrammar(item.id)}><strong>{item.title}</strong><span>{item.meaning}</span></Button>)}</div> : <p className="detail-empty">関連する英文メモは未登録です。</p>}<div className="unit-study-logs"><h4>この単元の学習記録</h4>{unit.study_logs?.length ? <div className="unit-study-log-list">{unit.study_logs.map(log => <Button variant="outline" key={log.id} data-detail-log-id={log.id} onClick={() => onOpenLog(log.id)}><time>{formatRecordedAt(log.recorded_at)}</time><strong>{log.title}</strong></Button>)}</div> : <p className="detail-empty">この単元に関連する学習記録はありません。</p>}</div></Section>
   </article></section>;
 }
 
@@ -259,7 +259,7 @@ function SupabaseSettings({ hidden }) {
     try { await api.enableSqlite(); setStoreState(previous => ({ ...previous, activeStore: 'sqlite' })); setStatus('読み書き先をSQLiteへ戻しました。Supabase上のコピーは削除されません。'); }
     catch (error) { setStatus(error.message); } finally { setBusy(false); }
   }
-  const countLabels = { words: '単語', sentences: '英文・文法', curriculum_units: 'カリキュラム', curriculum_unit_grammar_items: '関連付け', study_logs: '学習記録' };
+  const countLabels = { words: '単語', sentences: '英文', curriculum_units: 'カリキュラム', curriculum_unit_grammar_items: '関連付け', study_logs: '学習記録' };
   return <section className="settings-view" id="settings-view" hidden={hidden}>
     <header className="settings-heading"><p>現在の読み書き先: <strong>{storeState.activeStore === 'supabase' ? 'Supabase' : isWeb ? '未設定' : 'ローカルSQLite'}</strong></p><span className={`connection-badge${verified ? ' verified' : ''}`}>{storeState.activeStore === 'supabase' ? <><ShieldCheck size={15} />Supabaseを使用中</> : verified ? <><ShieldCheck size={15} />接続確認済み</> : <><Database size={15} />{isWeb ? '初期設定が必要' : 'SQLiteが既定'}</>}</span></header>
     <section className="settings-card"><div className="settings-card-heading"><h3>Data API</h3><p>保存するのはURLとPublishable Keyだけです。DBパスワード、Secret Key、Service Role Keyは受け付けません。</p></div>
