@@ -173,9 +173,9 @@ form { display:grid; gap:17px; }
 .ui-button-ghost { background:transparent; color:var(--accent); } .ui-button-ghost:hover { background:#eaf2ec; }
 .ui-button-destructive { background:#9a5a46; color:white; }
 .save-button { width:100%; margin-top:3px; }
-.library-tools { display:flex; align-items:start; gap:12px; } .library-tools > .ui-button { white-space:nowrap; }
+.library-tools { display:flex; align-items:start; justify-content:space-between; gap:18px; width:100%; } .library-tools > .ui-button { flex:none; white-space:nowrap; }
 .search-area { display:grid; justify-items:end; gap:6px; } .search-area kbd { color:var(--muted); font:500 10px ui-monospace,monospace; border:1px solid var(--line); border-radius:5px; padding:3px 6px; background:var(--paper); }
-.search { display:flex; align-items:center; gap:6px; font-weight:400; color:var(--muted); min-width:260px; } .search input { width:100%; padding:8px 10px; }
+.search { display:flex; flex:0 1 420px; align-items:center; gap:6px; min-width:260px; max-width:420px; font-weight:400; color:var(--muted); } .search input { width:100%; min-width:0; padding:8px 10px; }
 .status { min-height:22px; color:var(--muted); font-size:13px; margin-bottom:10px; }
 .entry-list { display:grid; gap:10px; }
 .entry-card { text-align:left; display:grid; gap:10px; width:100%; padding:16px 18px; border:1px solid var(--line); border-radius:10px; background:white; }
@@ -212,6 +212,8 @@ form { display:grid; gap:17px; }
 .empty { padding:42px 20px; text-align:center; background:var(--warm); border-radius:11px; color:#5e655f; }
 .dialog-overlay { position:fixed; inset:0; z-index:50; background:#18332a88; animation:fade-in .15s ease; }
 .dialog-content { position:fixed; z-index:51; top:50%; left:50%; translate:-50% -50%; width:min(560px,calc(100% - 32px)); max-height:calc(100vh - 48px); overflow:auto; border:1px solid var(--line); border-radius:16px; padding:28px; background:white; color:var(--ink); box-shadow:0 24px 70px #0d291f40; }
+.dialog-content,.dialog-content form,.dialog-content .ui-label,.dialog-content .field-row,.dialog-content .field-row > * { min-width:0; max-width:100%; }
+.dialog-content input[type="date"] { display:block; width:100%; min-width:0; max-width:100%; inline-size:100%; min-inline-size:0; max-inline-size:100%; }
 .dialog-content:focus { outline:none; }
 .dialog-close { position:absolute; top:18px; right:18px; display:grid; place-items:center; width:34px; height:34px; padding:0; border:0; border-radius:8px; background:transparent; color:var(--muted); cursor:pointer; }
 .dialog-close:hover { background:var(--paper); color:var(--ink); }
@@ -271,9 +273,9 @@ form { display:grid; gap:17px; }
   .summary-grid { grid-template-columns:1fr; }
   .workspace,.study-log-view { grid-template-columns:1fr; }
   .list-toolbar { margin-bottom:14px; }
-  .library-tools { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:stretch; width:100%; }
+  .library-tools { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:stretch; justify-content:stretch; width:100%; }
   .library-tools > .ui-button { padding-inline:11px; }
-  .search { min-width:0; width:100%; }
+  .search { min-width:0; width:100%; max-width:none; }
   .search input { min-width:0; }
   .activity-panel { padding:20px 12px; }
   .activity-grid { grid-template-columns:repeat(53,minmax(0,1fr)); grid-template-rows:repeat(7,auto); grid-auto-columns:unset; gap:1px; width:100%; overflow:visible; padding:0; }
@@ -291,7 +293,8 @@ form { display:grid; gap:17px; }
   .entry-edit-button.ui-button { width:44px; height:44px; min-height:44px; flex:none; }
   .field-row { grid-template-columns:1fr; }
   .settings-card,.entry-panel,.list-panel,.summary-panel { padding:20px 16px; }
-  .dialog-content { width:calc(100% - 24px); max-height:calc(100dvh - 24px); padding:24px 18px; }
+  .dialog-content { width:calc(100% - 24px); max-width:calc(100% - 24px); max-height:calc(100dvh - 24px); padding:24px 18px; overscroll-behavior:contain; }
+  .dialog-content input[type="date"] { width:100%; min-width:0; max-width:100%; -webkit-appearance:none; appearance:none; }
   .settings-actions,.confirm-actions { display:grid; grid-template-columns:1fr; }
   .settings-actions .ui-button,.confirm-actions .ui-button { width:100%; }
 }

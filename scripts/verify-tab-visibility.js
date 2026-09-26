@@ -24,6 +24,8 @@ app.whenReady().then(async () => {
 
   const window = new BrowserWindow({
     show: false,
+    width: 320,
+    height: 720,
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, '..', 'src', 'preload.js'),
@@ -37,6 +39,11 @@ app.whenReady().then(async () => {
   const result = await window.webContents.executeJavaScript(`
     (async () => {
       await new Promise(resolve => setTimeout(resolve, 100));
+      const viewportWidth = window.innerWidth;
+      const fitsViewport = element => { const rect = element?.getBoundingClientRect(); return Boolean(rect && rect.left >= 0 && rect.right <= viewportWidth); };
+      const formFitsDialog = dialog => Boolean(dialog && fitsViewport(dialog)
+        && dialog.scrollWidth <= dialog.clientWidth
+        && [...dialog.querySelectorAll('input, textarea, button, [role="combobox"]')].every(fitsViewport));
       const summary = document.querySelector('#summary-view');
       const summaryInitial = !summary.hidden
         && document.querySelector('.tab.active')?.dataset.kind === 'summary'
@@ -84,6 +91,13 @@ app.whenReady().then(async () => {
       await new Promise(resolve => setTimeout(resolve, 300));
       const libraryUsesFullWidth = !document.querySelector('#library-workspace > .entry-panel')
         && Boolean(document.querySelector('#library-workspace > .library-list-panel'));
+      const libraryTools = document.querySelector('.library-tools');
+      const libraryToolsRect = libraryTools?.getBoundingClientRect();
+      const searchRect = libraryTools?.querySelector('.search')?.getBoundingClientRect();
+      const addButtonRect = document.querySelector('#add-entry')?.getBoundingClientRect();
+      const libraryHeaderUsesFullWidth = Math.abs(searchRect.left - libraryToolsRect.left) < 0.5
+        && Math.abs(addButtonRect.right - libraryToolsRect.right) < 0.5
+        && searchRect.right < addButtonRect.left;
       const addButtonVisible = document.querySelector('#add-entry')?.textContent === '単語を追加';
       const firstWordCard = document.querySelector('.word-entry-card');
       const wordCardComplete = Boolean(firstWordCard?.querySelector('.inflection-chip'))
@@ -115,6 +129,8 @@ app.whenReady().then(async () => {
       await new Promise(resolve => setTimeout(resolve, 80));
       const addDialog = document.querySelector('#entry-dialog');
       const addModalOpen = addDialog?.dataset.state === 'open';
+      const wordAddModalFitsMobile = formFitsDialog(addDialog)
+        && fitsViewport(addDialog?.querySelector('[name="last_reviewed_at"]'));
       const addForgettingLevelHidden = !addDialog?.querySelector('[name="forgetting_level"]');
       const addLevelOneExplanation = addDialog?.querySelector('.default-level-note')?.innerText.includes('レベル 1')
         && addDialog?.querySelector('.default-level-note')?.innerText.includes('自動更新');
@@ -143,6 +159,14 @@ app.whenReady().then(async () => {
       const sentenceMeaningCanToggle = getComputedStyle(sentenceMeaningField?.querySelector('.meaning-text')).visibility === 'visible'
         && sentenceMeaningField?.querySelector('[data-toggle-meaning]')?.getAttribute('aria-expanded') === 'true';
       const sentenceHeightStableOnMeaningToggle = Math.abs(firstSentenceCard.getBoundingClientRect().height - sentenceHeightBeforeMeaningToggle) < 0.5;
+      document.querySelector('#add-entry')?.click();
+      await new Promise(resolve => setTimeout(resolve, 80));
+      const sentenceAddDialog = document.querySelector('#entry-dialog');
+      const sentenceAddModalFitsMobile = sentenceAddDialog?.dataset.state === 'open'
+        && formFitsDialog(sentenceAddDialog)
+        && fitsViewport(sentenceAddDialog?.querySelector('[name="last_reviewed_at"]'));
+      sentenceAddDialog?.querySelector('.dialog-close')?.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
       document.querySelector('[data-kind="curriculum"]').click();
       await new Promise(resolve => setTimeout(resolve, 100));
       const library = document.querySelector('#library-workspace');
@@ -231,6 +255,7 @@ app.whenReady().then(async () => {
         reviewOnlyOnSummary,
         largeHeaderAbsent,
         libraryUsesFullWidth,
+        libraryHeaderUsesFullWidth,
         addButtonVisible,
         wordCardComplete,
         editUsesAccessibleIconButton,
@@ -239,6 +264,7 @@ app.whenReady().then(async () => {
         wordMeaningCanToggle,
         wordHeightStableOnMeaningToggle,
         addModalOpen,
+        wordAddModalFitsMobile,
         addForgettingLevelHidden,
         addLevelOneExplanation,
         addInflectionVisible,
@@ -248,6 +274,7 @@ app.whenReady().then(async () => {
         sentenceMeaningHiddenByDefault,
         sentenceMeaningCanToggle,
         sentenceHeightStableOnMeaningToggle,
+        sentenceAddModalFitsMobile,
         libraryHidden: library.hidden,
         libraryDisplay: getComputedStyle(library).display,
         curriculumHidden: curriculum.hidden,
@@ -307,6 +334,7 @@ app.whenReady().then(async () => {
     && result.reviewOnlyOnSummary
     && result.largeHeaderAbsent
     && result.libraryUsesFullWidth
+    && result.libraryHeaderUsesFullWidth
     && result.addButtonVisible
     && result.wordCardComplete
     && result.editUsesAccessibleIconButton
@@ -315,6 +343,7 @@ app.whenReady().then(async () => {
     && result.wordMeaningCanToggle
     && result.wordHeightStableOnMeaningToggle
     && result.addModalOpen
+    && result.wordAddModalFitsMobile
     && result.addForgettingLevelHidden
     && result.addLevelOneExplanation
     && result.addInflectionVisible
@@ -324,6 +353,7 @@ app.whenReady().then(async () => {
     && result.sentenceMeaningHiddenByDefault
     && result.sentenceMeaningCanToggle
     && result.sentenceHeightStableOnMeaningToggle
+    && result.sentenceAddModalFitsMobile
     && !result.menuBarVisible
     && result.libraryDisplay === 'none'
     && result.curriculumHidden
