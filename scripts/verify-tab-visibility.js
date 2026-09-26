@@ -74,6 +74,11 @@ app.whenReady().then(async () => {
       const summary = document.querySelector('#summary-view');
       recordPage(summary);
       const storageBadge = document.querySelector('.local-badge');
+      const topbar = document.querySelector('.topbar');
+      const compactIconOnlyHeader = Boolean(topbar?.querySelector('.brand-mark'))
+        && !topbar.querySelector('.brand')
+        && !topbar.innerText.includes('English Shelf')
+        && !topbar.innerText.includes('LOCAL STUDY DESK');
       const sqliteStorageBadgeAccurate = storageBadge?.dataset.activeStore === 'sqlite'
         && storageBadge.innerText.includes('この端末に保存')
         && fitsViewport(storageBadge);
@@ -99,6 +104,9 @@ app.whenReady().then(async () => {
         && wordDistributionTotal === 31
         && sentenceDistributionTotal === 8
         && [...document.querySelectorAll('#forgetting-distribution-chart .bar-column > span')].some(value => value.textContent === '0');
+      const distributionFitsMobile = distributionGroups.length === 8
+        && getComputedStyle(document.querySelector('#forgetting-distribution-chart')).gridTemplateColumns.split(' ').length === (viewportWidth <= 760 ? 4 : 8)
+        && [...distributionGroups].every(group => fitsViewport(group));
       const reviewOnlyOnSummary = summary.contains(document.querySelector('#start-review'))
         && document.querySelectorAll('#start-review').length === 1;
       const largeHeaderAbsent = !document.querySelector('h1');
@@ -125,6 +133,9 @@ app.whenReady().then(async () => {
       const libraryUsesFullWidth = !document.querySelector('#library-workspace > .entry-panel')
         && Boolean(document.querySelector('#library-workspace > .library-list-panel'));
       const libraryTools = document.querySelector('.library-tools');
+      const searchHasNoIcon = !libraryTools?.querySelector('.search svg')
+        && libraryTools?.querySelector('#search')?.placeholder === '単語を検索';
+      const wordTabUsesVocabularyIcon = document.querySelector('[data-kind="words"] .tab-icon')?.classList.contains('lucide-book-a');
       const libraryToolsRect = libraryTools?.getBoundingClientRect();
       const searchRect = libraryTools?.querySelector('.search')?.getBoundingClientRect();
       const addButtonRect = document.querySelector('#add-entry')?.getBoundingClientRect();
@@ -336,8 +347,9 @@ app.whenReady().then(async () => {
         && !studyLogView.querySelector('#study-log-detail');
       const firstStudyLogCard = studyLogView.querySelector('[data-study-log-id]');
       const studyLogCardLeftAligned = getComputedStyle(firstStudyLogCard).textAlign === 'left'
-        && getComputedStyle(firstStudyLogCard).justifyItems === 'start'
-        && [...firstStudyLogCard.children].every(child => getComputedStyle(child).textAlign === 'left');
+        && firstStudyLogCard?.querySelector('.study-log-card-content')
+        && [...firstStudyLogCard.querySelectorAll('time, strong, .study-log-card-content, .study-log-card-unit')]
+          .every(child => getComputedStyle(child).textAlign === 'left');
       firstStudyLogCard?.click();
       await new Promise(resolve => setTimeout(resolve, 80));
       const listItemOpensDetail = Boolean(studyLogView.querySelector('#study-log-detail'))
@@ -371,12 +383,16 @@ app.whenReady().then(async () => {
       return {
         summaryInitial,
         sqliteStorageBadgeAccurate,
+        compactIconOnlyHeader,
         curriculumProgressSummary,
         distributionComplete,
+        distributionFitsMobile,
         reviewOnlyOnSummary,
         largeHeaderAbsent,
         libraryUsesFullWidth,
         libraryHeaderUsesFullWidth,
+        searchHasNoIcon,
+        wordTabUsesVocabularyIcon,
         levelFilterHasAllOptions,
         addButtonVisible,
         wordCardComplete,
@@ -468,6 +484,10 @@ app.whenReady().then(async () => {
   const passed = result.libraryHidden
     && result.summaryInitial
     && result.sqliteStorageBadgeAccurate
+    && result.compactIconOnlyHeader
+    && result.distributionFitsMobile
+    && result.searchHasNoIcon
+    && result.wordTabUsesVocabularyIcon
     && result.curriculumProgressSummary
     && result.distributionComplete
     && result.reviewOnlyOnSummary

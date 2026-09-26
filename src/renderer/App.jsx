@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, BookText, Check, ChevronLeft, Copy, Database, Eye, EyeOff, GraduationCap, LayoutDashboard, NotebookPen, Pencil, Search, Settings, ShieldCheck, Sparkles, TextCursorInput } from 'lucide-react';
+import { BookA, BookOpen, BookText, Check, ChevronLeft, Copy, Database, Eye, EyeOff, GraduationCap, LayoutDashboard, NotebookPen, Pencil, Settings, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Textarea } from './components/ui/textarea';
@@ -15,7 +15,7 @@ const configs = {
 };
 const tabs = [
   { id: 'summary', label: 'サマリ', Icon: LayoutDashboard },
-  { id: 'words', label: '単語', Icon: TextCursorInput },
+  { id: 'words', label: '単語', Icon: BookA },
   { id: 'sentences', label: '英文', Icon: BookText },
   { id: 'curriculum', label: 'カリキュラム', Icon: GraduationCap },
   { id: 'study-logs', label: '学習記録', Icon: NotebookPen },
@@ -161,7 +161,7 @@ function Library({ hidden, kind, entries, search, onSearch, levelFilter, onLevel
   const config = configs[kind];
   const visibleEntries = levelFilter === 'all' ? entries : entries.filter(entry => Number(entry.forgetting_level || 1) === Number(levelFilter));
   return <section className="workspace page-container" id="library-workspace" hidden={hidden}><section className="list-panel library-list-panel">
-    <div className="list-toolbar"><div className="library-tools"><Label className="search"><Search size={16} /><Input ref={searchRef} id="search" type="search" placeholder={`${config.singular}を検索`} value={search} onChange={e => onSearch(e.target.value)} /></Label><Label className="level-filter"><span>忘却レベル</span><select id="forgetting-level-filter" value={levelFilter} onChange={event => onLevelFilter(event.target.value)}><option value="all">すべて</option>{Array.from({ length: 8 }, (_, index) => <option key={index + 1} value={String(index + 1)}>レベル {index + 1}</option>)}</select></Label><Button id="add-entry" type="button" onClick={onAdd}>{config.singular}を追加</Button></div></div>
+    <div className="list-toolbar"><div className="library-tools"><Label className="search"><Input ref={searchRef} id="search" type="search" placeholder={`${config.singular}を検索`} value={search} onChange={e => onSearch(e.target.value)} /></Label><Label className="level-filter"><span>忘却レベル</span><select id="forgetting-level-filter" value={levelFilter} onChange={event => onLevelFilter(event.target.value)}><option value="all">すべて</option>{Array.from({ length: 8 }, (_, index) => <option key={index + 1} value={String(index + 1)}>レベル {index + 1}</option>)}</select></Label><Button id="add-entry" type="button" onClick={onAdd}>{config.singular}を追加</Button></div></div>
     <div id="status" className="status">{status === '検索中…' ? status : `${visibleEntries.length} 件`}</div><div id="entry-list" className="entry-list">{visibleEntries.length ? visibleEntries.map(entry => <LibraryEntryCard kind={kind} entry={entry} onEdit={onEdit} key={entry.id} />) : <div className="empty">{search || levelFilter !== 'all' ? '条件に一致する項目はありません。' : `まだ${config.singular}がありません。「追加」から登録できます。`}</div>}</div>
   </section></section>;
 }
@@ -195,7 +195,7 @@ function StudyLogs({ hidden, logs, selectedDate, onDate, selectedId, onSelect, o
   return <section className={`study-log-view page-container${selected ? ' detail-open' : ''}`} id="study-log-view" hidden={hidden}>{selected
     ? <div className="study-log-detail-screen"><Button id="back-to-study-logs" type="button" variant="ghost" className="back-button" onClick={onBack}><ChevronLeft size={17} />学習記録一覧へ</Button><section className="list-panel" id="study-log-detail"><StudyLogDetail log={selected} onOpenUnit={onOpenUnit} onUpdateNote={onUpdateNote} /></section></div>
     : <aside className="list-panel"><div className="panel-heading study-log-heading"><span id="study-log-count" className="status">{selectedDate ? `${selectedDate} · ${filtered.length} 件` : `${filtered.length} 件`}</span><div className="date-filter"><span className="date-filter-label">日付指定</span><DateInput wrapperClassName="date-input-control" id="study-log-date-filter" aria-label="学習記録を日付で絞り込む" max={formatDateKey(new Date())} value={selectedDate} onChange={event => onDate(event.target.value)}><Button id="clear-study-log-date" className="date-clear-inside" type="button" variant="ghost" size="icon" aria-label="日付選択を解除" hidden={!selectedDate} onClick={() => onDate('')}>×</Button></DateInput></div></div>
-      <div id="study-log-list" className="study-log-list">{filtered.length ? filtered.map(log => <Button variant="outline" className="study-log-card" data-study-log-id={log.id} key={log.id} onClick={() => onSelect(log.id)}><time>{formatRecordedAt(log.recorded_at)}</time><strong>{log.title}</strong><span>{log.curriculum_unit_title || '関連単元なし'}</span></Button>) : <div className="empty">{selectedDate ? 'この日の学習記録はありません。' : '学習記録はまだありません。Codexに「今の話を記録して」と伝えると追加できます。'}</div>}</div></aside>}
+      <div id="study-log-list" className="study-log-list">{filtered.length ? filtered.map(log => <Button variant="outline" className="study-log-card" data-study-log-id={log.id} key={log.id} onClick={() => onSelect(log.id)}><time className="study-log-card-date">{formatRecordedAt(log.recorded_at)}</time><span className="study-log-card-content"><strong>{log.title}</strong><span className="study-log-card-unit">{log.curriculum_unit_title || '関連単元なし'}</span></span></Button>) : <div className="empty">{selectedDate ? 'この日の学習記録はありません。' : '学習記録はまだありません。Codexに「今の話を記録して」と伝えると追加できます。'}</div>}</div></aside>}
   </section>;
 }
 
@@ -334,7 +334,7 @@ export default function App() {
   const StoreBadgeIcon = storeBadge.Icon;
   return <>
     <div className={`pull-refresh ${pullStatus}`} style={{ '--pull-distance': `${pullDistance}px` }} role="status" aria-live="polite">{pullStatus === 'refreshing' ? '更新中…' : pullStatus === 'done' ? '更新しました' : pullDistance >= 64 ? '離して更新' : '引き下げて更新'}</div>
-    <main className="app-shell" onTouchStart={beginPull} onTouchMove={movePull} onTouchEnd={finishPull} onTouchCancel={finishPull}><header className="topbar"><div className="brand"><span className="brand-mark"><BookOpen size={18} /></span><div><strong>English Shelf</strong><small>LOCAL STUDY DESK</small></div></div><span className={`local-badge${storeBadge.className}`} data-active-store={storeState.activeStore}><StoreBadgeIcon size={13} />{storeBadge.label}</span></header>
+    <main className="app-shell" onTouchStart={beginPull} onTouchMove={movePull} onTouchEnd={finishPull} onTouchCancel={finishPull}><header className="topbar"><span className="brand-mark" aria-label="English Shelf"><BookOpen size={18} aria-hidden="true" /></span><span className={`local-badge${storeBadge.className}`} data-active-store={storeState.activeStore}><StoreBadgeIcon size={13} />{storeBadge.label}</span></header>
       <nav className="tabs" aria-label="メインナビゲーション">{tabs.map(({ id, label, Icon }) => <Button variant="ghost" className={`tab${activeTab === id ? ' active' : ''}`} data-kind={id} key={id} aria-label={label} title={label} onClick={() => navigate(id)}><Icon className="tab-icon" size={19} aria-hidden="true" /><span className="tab-label">{label}</span></Button>)}</nav>
       <Summary hidden={view !== 'summary'} words={words} sentences={sentences} units={units} logs={logs} loadError={loadError} selectedDate={selectedDate} onSelectDate={selectActivityDate} onReview={startReview} />
       <Library hidden={view !== 'words' && view !== 'sentences'} kind={kind} entries={entries} search={search} onSearch={value => { setSearch(value); setLibraryStatus('検索中…'); }} levelFilter={levelFilters[kind]} onLevelFilter={value => setLevelFilters(previous => ({ ...previous, [kind]: value }))} status={libraryStatus} onAdd={() => { setEditingEntry(null); setEntryOpen(true); }} onEdit={editEntry} searchRef={searchRef} />

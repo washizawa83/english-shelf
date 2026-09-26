@@ -29,6 +29,11 @@ app.whenReady().then(async () => {
     const tabIcons = [...document.querySelectorAll('.tab-icon')];
     const tabLabels = [...document.querySelectorAll('.tab-label')];
     const storageBadge = document.querySelector('.local-badge');
+    const topbar = document.querySelector('.topbar');
+    const compactIconOnlyHeader = Boolean(topbar?.querySelector('.brand-mark'))
+      && !topbar.querySelector('.brand')
+      && !topbar.innerText.includes('English Shelf')
+      && !topbar.innerText.includes('LOCAL STUDY DESK');
     const supabaseStorageBadgeAccurate = storageBadge?.dataset.activeStore === 'supabase'
       && storageBadge.innerText.includes('Supabaseに保存')
       && !/https?:|publishable|key/i.test(storageBadge.innerText)
@@ -56,6 +61,13 @@ app.whenReady().then(async () => {
     recordPage(document.querySelector('#summary-view'));
     const activityGrid = document.querySelector('#study-activity-grid');
     const activityPanel = activityGrid?.closest('.activity-panel');
+    const distributionChart = document.querySelector('#forgetting-distribution-chart');
+    const distributionGroups = [...distributionChart.querySelectorAll('.level-group')];
+    const distributionFitsMobile = distributionGroups.length === 8
+      && getComputedStyle(distributionChart).gridTemplateColumns.split(' ').length === 4
+      && distributionGroups.every(group => group.getBoundingClientRect().left >= 0
+        && group.getBoundingClientRect().right <= document.documentElement.clientWidth)
+      && distributionChart.scrollWidth <= distributionChart.clientWidth;
     document.querySelector('[data-kind="study-logs"]')?.click();
     await new Promise(resolve => setTimeout(resolve, 80));
     recordPage(document.querySelector('#study-log-view'));
@@ -99,6 +111,9 @@ app.whenReady().then(async () => {
     document.querySelector('[data-kind="words"]')?.click();
     await new Promise(resolve => setTimeout(resolve, 80));
     recordPage(document.querySelector('#library-workspace'));
+    const wordSearchHasNoIcon = !document.querySelector('.search svg')
+      && document.querySelector('#search')?.placeholder === '単語を検索';
+    const wordTabUsesVocabularyIcon = document.querySelector('[data-kind="words"] .tab-icon')?.classList.contains('lucide-book-a');
     const wordLevelFilter = document.querySelector('#forgetting-level-filter');
     const mobileLevelFilterFits = wordLevelFilter?.options.length === 9
       && wordLevelFilter.getBoundingClientRect().right <= document.documentElement.clientWidth
@@ -116,6 +131,8 @@ app.whenReady().then(async () => {
     document.querySelector('[data-kind="sentences"]')?.click();
     await new Promise(resolve => setTimeout(resolve, 80));
     recordPage(document.querySelector('#library-workspace'));
+    const sentenceSearchHasNoIcon = !document.querySelector('.search svg')
+      && document.querySelector('#search')?.placeholder === '英文を検索';
     const sentenceLevelFilter = document.querySelector('#forgetting-level-filter');
     const sentenceFilterStartsIndependently = sentenceLevelFilter?.value === 'all';
     sentenceLevelFilter.value = '4';
@@ -150,6 +167,7 @@ app.whenReady().then(async () => {
       activeSupabaseStateVisible: settings?.innerText.includes('Supabaseを使用中')
         && ![...settings.querySelectorAll('button')].some(button => button.textContent === 'Supabaseを使用する'),
       supabaseStorageBadgeAccurate,
+      compactIconOnlyHeader,
       mobileViewportFits: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
       mobileTabsUseIcons: tabIcons.length === 6
         && tabIcons.every(icon => getComputedStyle(icon).display !== 'none')
@@ -157,6 +175,10 @@ app.whenReady().then(async () => {
       activityFitsWithoutHorizontalScroll: Boolean(activityGrid && activityPanel)
         && activityGrid.scrollWidth <= activityPanel.clientWidth
         && activityGrid.getBoundingClientRect().right <= document.documentElement.clientWidth,
+      distributionFitsMobile,
+      wordSearchHasNoIcon,
+      sentenceSearchHasNoIcon,
+      wordTabUsesVocabularyIcon,
       dateControlFitsViewport: dateFitsViewport,
       dateFilterUnframed,
       initialDatePlaceholderVisible,
