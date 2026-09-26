@@ -198,8 +198,9 @@ function SupabaseSettings({ hidden }) {
   const [setup, setSetup] = useState(null), [confirmOpen, setConfirmOpen] = useState(false), [confirmed, setConfirmed] = useState(false), [result, setResult] = useState(null);
   const [storeState, setStoreState] = useState({ activeStore: 'sqlite', migrationVerified: false });
   const [accessSetup, setAccessSetup] = useState(null), [accessVerified, setAccessVerified] = useState(false);
+  const [accessStatus, setAccessStatus] = useState(''), [accessResult, setAccessResult] = useState(null);
   const [switchOpen, setSwitchOpen] = useState(false), [switchConfirmed, setSwitchConfirmed] = useState(false);
-  useEffect(() => { Promise.all([api.getSupabaseSettings(), api.getDataStoreStatus()]).then(([settings, dataStore]) => { setForm(settings); setStoreState(dataStore); }).catch(error => setStatus(error.message)); }, []);
+  useEffect(() => { Promise.all([api.getSupabaseSettings(), api.getDataStoreStatus()]).then(async ([settings, dataStore]) => { setForm(settings); setStoreState(dataStore); if (isWeb && dataStore.activeStore !== 'supabase' && dataStore.diagnostics?.accessAuthorized === true) { setAccessStatus('保存済みの端末認証でSupabaseデータを確認しています…'); try { const checked = await api.verifySupabaseData(); setAccessVerified(true); setAccessResult(checked); setAccessStatus('Supabaseデータを確認できました。追加のSQL実行は不要です。'); } catch (error) { setAccessStatus(error.message); } } }).catch(error => { setStatus(error.message); setAccessStatus(error.message); }); }, [isWeb]);
   const field = (name, value) => { setForm(previous => ({ ...previous, [name]: value })); setVerified(false); setSetup(null); setResult(null); };
   async function save() {
     setBusy(true); setStatus('');
@@ -227,13 +228,13 @@ function SupabaseSettings({ hidden }) {
   }
   async function prepareAccess() {
     setBusy(true); setStatus('Supabase利用SQLを準備しています…');
-    try { const prepared = await api.prepareSupabaseAccess(); setAccessSetup(prepared); setAccessVerified(false); setStatus('SQLをSupabase DashboardのSQL Editorで一度だけ実行してください。'); }
-    catch (error) { setStatus(error.message); } finally { setBusy(false); }
+    try { const prepared = await api.prepareSupabaseAccess(); setAccessSetup(prepared); setAccessVerified(false); setAccessResult(null); setAccessStatus('端末認証SQLを実行後、下の確認ボタンを押してください。'); setStatus('SQLをSupabase DashboardのSQL Editorで一度だけ実行してください。'); }
+    catch (error) { setStatus(error.message); setAccessStatus(error.message); } finally { setBusy(false); }
   }
   async function verifyAccess() {
-    setBusy(true); setStatus(isWeb ? 'Supabaseデータを確認しています…' : 'SQLiteとSupabaseの全データを再照合しています…');
-    try { const checked = await api.verifySupabaseData(); setAccessVerified(true); setStoreState(previous => ({ ...previous, migrationVerified: true })); setStatus(`移行データが一致しました（単語${checked.counts.words}件・英文${checked.counts.sentences}件・カリキュラム${checked.counts.curriculum_units}件・学習記録${checked.counts.study_logs}件）。`); }
-    catch (error) { setAccessVerified(false); setStatus(error.message); } finally { setBusy(false); }
+    setBusy(true); setAccessResult(null); setAccessStatus(isWeb ? '端末認証とSupabaseデータを確認しています…' : 'SQLiteとSupabaseの全データを再照合しています…'); setStatus(isWeb ? 'Supabaseデータを確認しています…' : 'SQLiteとSupabaseの全データを再照合しています…');
+    try { const checked = await api.verifySupabaseData(); setAccessVerified(true); setAccessResult(checked); setStoreState(previous => ({ ...previous, migrationVerified: true })); const message = `確認完了（単語${checked.counts.words}件・英文${checked.counts.sentences}件・カリキュラム${checked.counts.curriculum_units}件・学習記録${checked.counts.study_logs}件）。`; setAccessStatus(message); setStatus(message); }
+    catch (error) { setAccessVerified(false); setAccessStatus(`確認失敗: ${error.message}`); setStatus(error.message); } finally { setBusy(false); }
   }
   async function enableSupabase() {
     setSwitchOpen(false); setBusy(true); setStatus('切替前の最終照合を実行しています…');
@@ -267,7 +268,8 @@ function SupabaseSettings({ hidden }) {
       {storeState.activeStore === 'supabase' ? <><div className="migration-result"><ShieldCheck size={18} /><div><strong>Supabaseを使用中</strong><p>新規追加・更新・復習・学習記録{isWeb ? '' : 'とMCP'}はSupabaseを読み書きします。</p></div></div>{!isWeb && <Button type="button" variant="outline" disabled={busy} onClick={enableSqlite}>SQLiteへ戻す</Button>}</> : <>
         <div className="migration-notice"><Database size={18} /><div><strong>{isWeb ? 'Supabaseを有効化するまでデータは表示されません' : '切替前はSQLiteを使用します'}</strong><p>{isWeb ? '接続確認とSupabaseデータ確認が完了するまで有効化できません。' : '接続確認と移行データ照合が完了するまで切替できません。切替後もSQLiteデータは削除されません。'}</p></div></div>
         <Button type="button" variant="outline" disabled={busy || !verified} onClick={prepareAccess}>Supabase利用SQLを生成</Button>
-        {accessSetup && <div className="setup-sql"><div className="setup-sql-heading"><strong>Supabase SQL Editorで一度だけ実行</strong><Button type="button" variant="outline" size="sm" onClick={async () => { await navigator.clipboard.writeText(accessSetup.setupSql); setStatus('Supabase利用SQLをコピーしました。'); }}><Copy size={14} />利用SQLをコピー</Button></div><Textarea readOnly rows={10} value={accessSetup.setupSql} aria-label="Supabase利用SQL" /><Button type="button" variant="outline" disabled={busy} onClick={verifyAccess}>SQL実行済み・{isWeb ? 'Supabaseデータを確認' : '移行データを再照合'}</Button></div>}
+        {accessSetup && <div className="setup-sql"><div className="setup-sql-heading"><strong>Supabase SQL Editorで一度だけ実行</strong><Button type="button" variant="outline" size="sm" onClick={async () => { await navigator.clipboard.writeText(accessSetup.setupSql); setStatus('Supabase利用SQLをコピーしました。'); }}><Copy size={14} />利用SQLをコピー</Button></div><Textarea readOnly rows={10} value={accessSetup.setupSql} aria-label="Supabase利用SQL" /><Button type="button" variant="outline" disabled={busy} onClick={verifyAccess}>{busy ? '確認中…' : `SQL実行済み・${isWeb ? 'Supabaseデータを確認' : '移行データを再照合'}`}</Button></div>}
+        {accessStatus && <div className={accessVerified ? 'migration-result' : 'migration-notice'} id="access-verification-status" role="status"><Database size={18} /><div><strong>{accessVerified ? 'Supabaseデータ確認済み' : '端末認証の確認状況'}</strong><p>{accessStatus}</p>{accessResult && <div className="migration-counts">{Object.entries(accessResult.counts).map(([key, count]) => <span key={key}>{countLabels[key]} <b>{count}</b></span>)}</div>}</div></div>}
         <Button type="button" disabled={busy || !verified || !accessVerified} onClick={() => setSwitchOpen(true)}>Supabaseを使用する</Button>
       </>}
     </section>

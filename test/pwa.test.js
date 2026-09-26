@@ -55,6 +55,8 @@ test('web bridge uses only public Supabase settings and hides desktop-only migra
   assert.match(webApi, /english_shelf_curriculum_unit_grammar_items: 'unit_id\.asc,grammar_item_id\.asc'/);
   assert.match(webApi, /all\('english_shelf_curriculum_unit_grammar_items', 'unit_id\.asc,grammar_item_id\.asc'\)/);
   assert.match(app, /!isWeb && <section className="settings-card migration-card"/);
+  assert.match(app, /id="access-verification-status"/);
+  assert.match(app, /確認中…/);
 });
 
 test('web bridge preserves an existing iPhone authorization and loads every summary data group', async () => {
@@ -97,4 +99,22 @@ test('web bridge does not show a broken active state as an empty summary', async
   assert.equal(inaccessibleStatus.needsReauthorization, true);
   assert.equal(inaccessibleStatus.diagnostics.accessAuthorized, false);
   await assert.rejects(() => inaccessible.api.verifySupabaseData(), /RLSで承認されていません/);
+});
+
+test('web bridge reuses an authorized pending token after PWA reload without another SQL run', async () => {
+  const settings = { url: 'https://demo.supabase.co', publishableKey: `sb_publishable_${'c'.repeat(24)}` };
+  const rows = {
+    english_shelf_words: Array.from({ length: 31 }, (_, id) => ({ id: id + 1 })),
+    english_shelf_sentences: Array.from({ length: 8 }, (_, id) => ({ id: id + 1 })),
+    english_shelf_curriculum_units: Array.from({ length: 28 }, (_, id) => ({ id: id + 1 })),
+    english_shelf_curriculum_unit_grammar_items: [],
+    english_shelf_study_logs: Array.from({ length: 2 }, (_, id) => ({ id: id + 1 }))
+  };
+  const pending = loadWebApi({ settings, runtime: { activeStore: 'setup', accessToken: 'authorized-pending-token', verification: null }, rows, deviceAccess: true });
+  const status = await pending.api.getDataStoreStatus();
+  assert.equal(status.activeStore, 'setup');
+  assert.equal(status.diagnostics.accessAuthorized, true);
+  const verified = await pending.api.verifySupabaseData();
+  assert.deepEqual(Array.from(Object.values(verified.counts)), [31, 8, 28, 0, 2]);
+  assert.equal(JSON.parse(pending.storage.get('english-shelf:supabase-runtime')).accessToken, 'authorized-pending-token');
 });
