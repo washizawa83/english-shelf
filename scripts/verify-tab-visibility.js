@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('node:path');
 const { StudyDatabase } = require('../src/database');
+const verificationWidth = Number(process.env.ENGLISH_SHELF_VERIFY_WIDTH) || 320;
 
 app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
@@ -24,7 +25,7 @@ app.whenReady().then(async () => {
 
   const window = new BrowserWindow({
     show: false,
-    width: 320,
+    width: verificationWidth,
     height: 720,
     autoHideMenuBar: true,
     webPreferences: {
@@ -109,6 +110,13 @@ app.whenReady().then(async () => {
         && editIconButton.getBoundingClientRect().width >= 40
         && editIconButton.getBoundingClientRect().height >= 40
         && getComputedStyle(editIconButton).borderColor === 'rgba(0, 0, 0, 0)';
+      const wordFooter = firstWordCard?.querySelector('.entry-card-footer');
+      const wordDate = wordFooter?.querySelector('.entry-review-date');
+      const wordFooterStaysOnOneLine = getComputedStyle(wordFooter).display === 'flex'
+        && getComputedStyle(wordDate).whiteSpace === 'nowrap'
+        && getComputedStyle(editIconButton).flexShrink === '0'
+        && Math.abs((wordDate.getBoundingClientRect().top + wordDate.getBoundingClientRect().bottom) / 2 - (editIconButton.getBoundingClientRect().top + editIconButton.getBoundingClientRect().bottom) / 2) < 1
+        && wordFooter.scrollWidth <= wordFooter.clientWidth;
       const wordMeaningField = firstWordCard?.querySelector('.meaning-field');
       const wordHeightBeforeMeaningToggle = firstWordCard?.getBoundingClientRect().height;
       const wordMeaningHiddenByDefault = Boolean(wordMeaningField)
@@ -119,6 +127,9 @@ app.whenReady().then(async () => {
         .map(label => label.getBoundingClientRect().left);
       const wordMeaningLabelAligned = wordMeaningLabelPositions.length === 3
         && wordMeaningLabelPositions.every(left => Math.abs(left - wordMeaningLabelPositions[0]) < 0.5);
+      const wordFieldStyle = getComputedStyle(wordMeaningField);
+      const wordDetailSpacingCompact = parseFloat(wordFieldStyle.gridTemplateColumns) <= 42.5
+        && parseFloat(wordFieldStyle.columnGap) <= 6.5;
       firstWordCard?.querySelector('[data-toggle-meaning]')?.click();
       await new Promise(resolve => setTimeout(resolve, 30));
       const wordMeaningCanToggle = getComputedStyle(wordMeaningField?.querySelector('.meaning-text')).visibility === 'visible'
@@ -154,11 +165,23 @@ app.whenReady().then(async () => {
       const sentenceMeaningHiddenByDefault = Boolean(firstSentenceCard)
         && getComputedStyle(sentenceMeaningField?.querySelector('.meaning-text')).visibility === 'hidden'
         && getComputedStyle(sentenceMeaningField?.querySelector('.meaning-mask')).visibility === 'visible';
+      const sentenceFieldStyle = getComputedStyle(sentenceMeaningField);
+      const sentenceDetailSpacingCompact = parseFloat(sentenceFieldStyle.gridTemplateColumns) <= 42.5
+        && parseFloat(sentenceFieldStyle.columnGap) <= 6.5;
       firstSentenceCard?.querySelector('[data-toggle-meaning]')?.click();
       await new Promise(resolve => setTimeout(resolve, 30));
       const sentenceMeaningCanToggle = getComputedStyle(sentenceMeaningField?.querySelector('.meaning-text')).visibility === 'visible'
         && sentenceMeaningField?.querySelector('[data-toggle-meaning]')?.getAttribute('aria-expanded') === 'true';
       const sentenceHeightStableOnMeaningToggle = Math.abs(firstSentenceCard.getBoundingClientRect().height - sentenceHeightBeforeMeaningToggle) < 0.5;
+      const sentenceFooter = firstSentenceCard?.querySelector('.entry-card-footer');
+      const sentenceDate = sentenceFooter?.querySelector('.entry-review-date');
+      const sentenceEdit = sentenceFooter?.querySelector('[data-edit-entry]');
+      const sentenceFooterStaysOnOneLine = sentenceDate?.innerText.includes('最終復習日')
+        && firstSentenceCard?.querySelector('.level-badge')?.innerText.includes('忘却 Lv.')
+        && getComputedStyle(sentenceDate).whiteSpace === 'nowrap'
+        && getComputedStyle(sentenceEdit).flexShrink === '0'
+        && Math.abs((sentenceDate.getBoundingClientRect().top + sentenceDate.getBoundingClientRect().bottom) / 2 - (sentenceEdit.getBoundingClientRect().top + sentenceEdit.getBoundingClientRect().bottom) / 2) < 1
+        && sentenceFooter.scrollWidth <= sentenceFooter.clientWidth;
       document.querySelector('#add-entry')?.click();
       await new Promise(resolve => setTimeout(resolve, 80));
       const sentenceAddDialog = document.querySelector('#entry-dialog');
@@ -259,8 +282,10 @@ app.whenReady().then(async () => {
         addButtonVisible,
         wordCardComplete,
         editUsesAccessibleIconButton,
+        wordFooterStaysOnOneLine,
         wordMeaningHiddenByDefault,
         wordMeaningLabelAligned,
+        wordDetailSpacingCompact,
         wordMeaningCanToggle,
         wordHeightStableOnMeaningToggle,
         addModalOpen,
@@ -272,8 +297,10 @@ app.whenReady().then(async () => {
         editModalOpen,
         editKeepsForgettingLevel,
         sentenceMeaningHiddenByDefault,
+        sentenceDetailSpacingCompact,
         sentenceMeaningCanToggle,
         sentenceHeightStableOnMeaningToggle,
+        sentenceFooterStaysOnOneLine,
         sentenceAddModalFitsMobile,
         libraryHidden: library.hidden,
         libraryDisplay: getComputedStyle(library).display,
@@ -338,8 +365,10 @@ app.whenReady().then(async () => {
     && result.addButtonVisible
     && result.wordCardComplete
     && result.editUsesAccessibleIconButton
+    && result.wordFooterStaysOnOneLine
     && result.wordMeaningHiddenByDefault
     && result.wordMeaningLabelAligned
+    && result.wordDetailSpacingCompact
     && result.wordMeaningCanToggle
     && result.wordHeightStableOnMeaningToggle
     && result.addModalOpen
@@ -351,8 +380,10 @@ app.whenReady().then(async () => {
     && result.editModalOpen
     && result.editKeepsForgettingLevel
     && result.sentenceMeaningHiddenByDefault
+    && result.sentenceDetailSpacingCompact
     && result.sentenceMeaningCanToggle
     && result.sentenceHeightStableOnMeaningToggle
+    && result.sentenceFooterStaysOnOneLine
     && result.sentenceAddModalFitsMobile
     && !result.menuBarVisible
     && result.libraryDisplay === 'none'

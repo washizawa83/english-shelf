@@ -66,6 +66,8 @@ test('word cards and forms expose every Notion word property', () => {
   assert.match(app, /placeholder="例: go \/ goes \/ went \/ gone"/);
   assert.match(app, /Notionの「変形」にそのまま保存されます/);
   assert.match(app, /<b>最終復習日<\/b>/);
+  assert.match(app, /className="entry-review-date"><b>最終復習日<\/b> \{formatReviewDate\(entry\.last_reviewed_at\)\}/);
+  assert.match(app, /if \(!value\) return '未復習'/);
   assert.match(app, /忘却 Lv\./);
   assert.match(app, /data-toggle-meaning/);
   assert.match(app, /data-edit-entry/);
