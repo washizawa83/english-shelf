@@ -97,7 +97,7 @@ app.whenReady().then(async () => {
       const addButtonRect = document.querySelector('#add-entry')?.getBoundingClientRect();
       const libraryHeaderUsesFullWidth = Math.abs(searchRect.left - libraryToolsRect.left) < 0.5
         && Math.abs(addButtonRect.right - libraryToolsRect.right) < 0.5
-        && searchRect.right < addButtonRect.left;
+        && Math.abs((addButtonRect.left - searchRect.right) - 18) < 0.5;
       const addButtonVisible = document.querySelector('#add-entry')?.textContent === '単語を追加';
       const firstWordCard = document.querySelector('.word-entry-card');
       const wordCardComplete = Boolean(firstWordCard?.querySelector('.inflection-chip'))

@@ -175,7 +175,7 @@ form { display:grid; gap:17px; }
 .save-button { width:100%; margin-top:3px; }
 .library-tools { display:flex; align-items:start; justify-content:space-between; gap:18px; width:100%; } .library-tools > .ui-button { flex:none; white-space:nowrap; }
 .search-area { display:grid; justify-items:end; gap:6px; } .search-area kbd { color:var(--muted); font:500 10px ui-monospace,monospace; border:1px solid var(--line); border-radius:5px; padding:3px 6px; background:var(--paper); }
-.search { display:flex; flex:0 1 420px; align-items:center; gap:6px; min-width:260px; max-width:420px; font-weight:400; color:var(--muted); } .search input { width:100%; min-width:0; padding:8px 10px; }
+.search { display:flex; flex:1 1 auto; align-items:center; gap:6px; min-width:260px; max-width:none; font-weight:400; color:var(--muted); } .search input { width:100%; min-width:0; padding:8px 10px; }
 .status { min-height:22px; color:var(--muted); font-size:13px; margin-bottom:10px; }
 .entry-list { display:grid; gap:10px; }
 .entry-card { text-align:left; display:grid; gap:10px; width:100%; padding:16px 18px; border:1px solid var(--line); border-radius:10px; background:white; }
