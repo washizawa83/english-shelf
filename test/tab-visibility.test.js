@@ -102,6 +102,8 @@ test('study log content is read-only while the learner memo remains editable', (
   assert.doesNotMatch(app, /log\.mastery_note|理解度メモ/);
   assert.match(app, /log\.id === Number\(selectedId\)/);
   assert.match(app, /onClick=\{\(\) => onSelect\(log\.id\)\}/);
+  assert.match(app, /id="back-to-study-logs"/);
+  assert.match(app, /\{selected\s*\? <div className="study-log-detail-screen"/);
 });
 
 test('Ctrl+F integration remains connected to the renderer', () => {

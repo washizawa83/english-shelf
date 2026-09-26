@@ -179,12 +179,13 @@ function CurriculumDetail({ hidden, unit, onBack, onOpenGrammar, onOpenLog }) {
   </article></section>;
 }
 
-function StudyLogs({ hidden, logs, selectedDate, onDate, selectedId, onSelect, onOpenUnit, onUpdateNote }) {
+function StudyLogs({ hidden, logs, selectedDate, onDate, selectedId, onSelect, onBack, onOpenUnit, onUpdateNote }) {
   const filtered = selectedDate ? logs.filter(log => formatDateKey(log.recorded_at) === selectedDate) : logs;
   const selected = filtered.find(log => log.id === Number(selectedId)) || null;
-  return <section className={`study-log-view${selected ? ' detail-open' : ''}`} id="study-log-view" hidden={hidden}><aside className="list-panel"><div className="panel-heading study-log-heading"><span id="study-log-count" className="status">{selectedDate ? `${selectedDate} · ${filtered.length} 件` : `${filtered.length} 件`}</span><div className="date-filter"><Label>日付を指定<span className="date-input-control"><Input id="study-log-date-filter" type="date" max={formatDateKey(new Date())} value={selectedDate} onChange={event => onDate(event.target.value)} /><Button id="clear-study-log-date" className="date-clear-inside" type="button" variant="ghost" size="icon" aria-label="日付選択を解除" hidden={!selectedDate} onClick={() => onDate('')}>×</Button></span></Label></div></div>
-    <div id="study-log-list" className="study-log-list">{filtered.length ? filtered.map(log => <Button variant="outline" className="study-log-card" data-study-log-id={log.id} key={log.id} onClick={() => onSelect(log.id)}><time>{formatRecordedAt(log.recorded_at)}</time><strong>{log.title}</strong><span>{log.curriculum_unit_title || '関連単元なし'}</span></Button>) : <div className="empty">{selectedDate ? 'この日の学習記録はありません。' : '学習記録はまだありません。Codexに「今の話を記録して」と伝えると追加できます。'}</div>}</div></aside>
-    {selected && <section className="list-panel" id="study-log-detail"><StudyLogDetail log={selected} onOpenUnit={onOpenUnit} onUpdateNote={onUpdateNote} /></section>}
+  return <section className={`study-log-view${selected ? ' detail-open' : ''}`} id="study-log-view" hidden={hidden}>{selected
+    ? <div className="study-log-detail-screen"><Button id="back-to-study-logs" type="button" variant="ghost" className="back-button" onClick={onBack}><ChevronLeft size={17} />学習記録一覧へ</Button><section className="list-panel" id="study-log-detail"><StudyLogDetail log={selected} onOpenUnit={onOpenUnit} onUpdateNote={onUpdateNote} /></section></div>
+    : <aside className="list-panel"><div className="panel-heading study-log-heading"><span id="study-log-count" className="status">{selectedDate ? `${selectedDate} · ${filtered.length} 件` : `${filtered.length} 件`}</span><div className="date-filter"><Label>日付を指定<span className="date-input-control"><Input id="study-log-date-filter" type="date" max={formatDateKey(new Date())} value={selectedDate} onChange={event => onDate(event.target.value)} /><Button id="clear-study-log-date" className="date-clear-inside" type="button" variant="ghost" size="icon" aria-label="日付選択を解除" hidden={!selectedDate} onClick={() => onDate('')}>×</Button></span></Label></div></div>
+      <div id="study-log-list" className="study-log-list">{filtered.length ? filtered.map(log => <Button variant="outline" className="study-log-card" data-study-log-id={log.id} key={log.id} onClick={() => onSelect(log.id)}><time>{formatRecordedAt(log.recorded_at)}</time><strong>{log.title}</strong><span>{log.curriculum_unit_title || '関連単元なし'}</span></Button>) : <div className="empty">{selectedDate ? 'この日の学習記録はありません。' : '学習記録はまだありません。Codexに「今の話を記録して」と伝えると追加できます。'}</div>}</div></aside>}
   </section>;
 }
 
@@ -304,17 +305,18 @@ export default function App() {
   useEffect(() => { if (view !== 'words' && view !== 'sentences') return; clearTimeout(searchTimer.current); searchTimer.current = setTimeout(() => refreshLibrary(kind, search), 180); return () => clearTimeout(searchTimer.current); }, [view, kind, search, refreshLibrary]);
   useEffect(() => { const listener = event => { if (!window.EnglishShelfShortcuts.shouldFocusSearch(event)) return; event.preventDefault(); setEntryOpen(false); setReviewOpen(false); setView(kind); setTimeout(() => { searchRef.current?.focus(); searchRef.current?.select(); }); }; document.addEventListener('keydown', listener); return () => document.removeEventListener('keydown', listener); }, [kind]);
 
-  function navigate(target) { if (target === 'words' || target === 'sentences') { setKind(target); setSearch(''); setView(target); } else { setView(target); } }
+  function navigate(target) { if (target === 'words' || target === 'sentences') { setKind(target); setSearch(''); setView(target); } else { if (target === 'study-logs') setSelectedLogId(null); setView(target); } }
   async function editEntry(id, targetKind = kind) { const entry = await api.get(targetKind, Number(id)); setKind(targetKind); setView(targetKind); setEditingEntry(entry); setEntryOpen(true); }
   async function startReview() { const [dueWords, dueSentences] = await Promise.all(['words', 'sentences'].map(type => api.due(type))); setReviewQueue([...dueWords.map(entry => ({ type: 'words', entry })), ...dueSentences.map(entry => ({ type: 'sentences', entry }))]); setReviewOpen(true); }
   function openUnit(id) { setSelectedUnitId(Number(id)); setView('curriculum-detail'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   function openLog(id) { setSelectedDate(''); setSelectedLogId(Number(id)); setView('study-logs'); }
   function selectActivityDate(date) { setSelectedDate(date); setSelectedLogId(null); setView('study-logs'); }
-  function selectStudyLog(id) { setSelectedLogId(Number(id)); setTimeout(() => document.querySelector('#study-log-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0); }
+  function selectStudyLog(id) { setSelectedLogId(Number(id)); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  function closeStudyLog() { setSelectedLogId(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   function updateLog(updated) { setLogs(previous => previous.map(log => log.id === updated.id ? updated : log)); }
-  function beginPull(event) { if (api.platform !== 'web' || window.innerWidth > 760 || window.scrollY > 0 || event.touches.length !== 1 || pullStatus === 'refreshing') return; pullStart.current = event.touches[0].clientY; pullDistanceRef.current = 0; setPullStatus('pulling'); }
-  function movePull(event) { if (pullStart.current == null || event.touches.length !== 1) return; const distance = Math.min(96, Math.max(0, (event.touches[0].clientY - pullStart.current) * .55)); pullDistanceRef.current = distance; setPullDistance(distance); }
-  async function finishPull() { if (pullStart.current == null) return; const shouldRefresh = pullDistanceRef.current >= 64; pullStart.current = null; pullDistanceRef.current = 0; if (!shouldRefresh) { setPullDistance(0); setPullStatus('idle'); return; } setPullDistance(52); setPullStatus('refreshing'); const tasks = [refreshAll()]; if (view === 'words' || view === 'sentences') tasks.push(refreshLibrary(kind, search)); await Promise.allSettled(tasks); setPullStatus('done'); setPullDistance(0); setTimeout(() => setPullStatus('idle'), 900); }
+  function beginPull(event) { if (api.platform !== 'web' || window.innerWidth > 760 || window.scrollY > 0 || event.touches.length !== 1 || pullStatus === 'refreshing') return; pullStart.current = event.touches[0].clientY; pullDistanceRef.current = 0; }
+  function movePull(event) { if (pullStart.current == null || event.touches.length !== 1) return; const distance = Math.min(96, Math.max(0, (event.touches[0].clientY - pullStart.current) * .55)); pullDistanceRef.current = distance; if (distance < 5) return; setPullStatus('pulling'); setPullDistance(distance); }
+  async function finishPull() { if (pullStart.current == null) return; const distance = pullDistanceRef.current, shouldRefresh = distance >= 64; pullStart.current = null; pullDistanceRef.current = 0; if (!shouldRefresh) { if (distance >= 5) { setPullDistance(0); setPullStatus('idle'); } return; } setPullDistance(52); setPullStatus('refreshing'); const tasks = [refreshAll()]; if (view === 'words' || view === 'sentences') tasks.push(refreshLibrary(kind, search)); await Promise.allSettled(tasks); setPullStatus('done'); setPullDistance(0); setTimeout(() => setPullStatus('idle'), 900); }
   const selectedUnit = units.find(unit => unit.id === selectedUnitId);
   const activeTab = view === 'curriculum-detail' ? 'curriculum' : view;
   return <>
@@ -325,7 +327,7 @@ export default function App() {
       <Library hidden={view !== 'words' && view !== 'sentences'} kind={kind} entries={entries} search={search} onSearch={value => { setSearch(value); setLibraryStatus('検索中…'); }} status={libraryStatus} onAdd={() => { setEditingEntry(null); setEntryOpen(true); }} onEdit={editEntry} searchRef={searchRef} />
       <CurriculumList hidden={view !== 'curriculum'} units={units} onOpenUnit={openUnit} onOpenGrammar={id => editEntry(id, 'sentences')} />
       <CurriculumDetail hidden={view !== 'curriculum-detail'} unit={selectedUnit} onBack={() => setView('curriculum')} onOpenGrammar={id => editEntry(id, 'sentences')} onOpenLog={openLog} />
-      <StudyLogs hidden={view !== 'study-logs'} logs={logs} selectedDate={selectedDate} onDate={value => { setSelectedDate(value); setSelectedLogId(null); }} selectedId={selectedLogId} onSelect={selectStudyLog} onOpenUnit={openUnit} onUpdateNote={updateLog} />
+      <StudyLogs hidden={view !== 'study-logs'} logs={logs} selectedDate={selectedDate} onDate={value => { setSelectedDate(value); setSelectedLogId(null); }} selectedId={selectedLogId} onSelect={selectStudyLog} onBack={closeStudyLog} onOpenUnit={openUnit} onUpdateNote={updateLog} />
       <SupabaseSettings hidden={view !== 'settings'} />
     </main>
     <EntryDialog open={entryOpen} onOpenChange={setEntryOpen} kind={kind} entry={editingEntry} onSaved={async () => { await Promise.all([refreshLibrary(), refreshAll()]); setLibraryStatus('保存しました。'); }} />

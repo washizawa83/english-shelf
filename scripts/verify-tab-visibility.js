@@ -157,16 +157,26 @@ app.whenReady().then(async () => {
       const studyLogView = document.querySelector('#study-log-view');
       const studyLogVisible = !studyLogView.hidden && getComputedStyle(studyLogView).display !== 'none';
       const activityRemovedFromStudyLogs = !studyLogView.querySelector('#study-activity-grid');
-      const dateInputBesideHeading = Boolean(studyLogView.querySelector('.study-log-heading #study-log-date-filter'));
       const studyLogDetailVisible = document.querySelector('#study-log-detail')?.innerText.includes('場所と時の語順')
         && document.querySelector('#study-log-detail')?.innerText.includes('学習したこと');
+      const detailReplacesList = !studyLogView.querySelector('#study-log-list')
+        && Boolean(studyLogView.querySelector('#back-to-study-logs'));
       const userNoteEditable = Boolean(studyLogView.querySelector('#study-log-user-note, [data-save-study-log-note]'));
       const masteryNoteHidden = !document.querySelector('#study-log-detail')?.innerText.includes('基本的な使い分けを確認')
         && !document.querySelector('#study-log-detail')?.innerText.includes('理解度メモ');
       const editableFields = [...studyLogView.querySelectorAll('input, textarea, select')];
-      const studyLogContentReadOnly = editableFields.length === 2
-        && editableFields.every(field => ['study-log-date-filter', 'study-log-user-note'].includes(field.id))
+      const studyLogContentReadOnly = editableFields.length === 1
+        && editableFields[0].id === 'study-log-user-note'
         && !studyLogView.querySelector('[data-action="edit"], [data-action="delete"]');
+      studyLogView.querySelector('#back-to-study-logs')?.click();
+      await new Promise(resolve => setTimeout(resolve, 80));
+      const dateInputBesideHeading = Boolean(studyLogView.querySelector('.study-log-heading #study-log-date-filter'));
+      const listRestoredByBack = Boolean(studyLogView.querySelector('#study-log-list'))
+        && !studyLogView.querySelector('#study-log-detail');
+      studyLogView.querySelector('[data-study-log-id]')?.click();
+      await new Promise(resolve => setTimeout(resolve, 80));
+      const listItemOpensDetail = Boolean(studyLogView.querySelector('#study-log-detail'))
+        && !studyLogView.querySelector('#study-log-list');
       const relatedUnitLinkVisible = Boolean(studyLogView.querySelector('[data-related-unit-id]'));
       studyLogView.querySelector('[data-related-unit-id]')?.click();
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -237,6 +247,9 @@ app.whenReady().then(async () => {
         activityRemovedFromStudyLogs,
         dateInputBesideHeading,
         studyLogDetailVisible,
+        detailReplacesList,
+        listRestoredByBack,
+        listItemOpensDetail,
         userNoteEditable,
         masteryNoteHidden,
         studyLogContentReadOnly,
@@ -309,6 +322,9 @@ app.whenReady().then(async () => {
     && result.activityRemovedFromStudyLogs
     && result.dateInputBesideHeading
     && result.studyLogDetailVisible
+    && result.detailReplacesList
+    && result.listRestoredByBack
+    && result.listItemOpensDetail
     && result.userNoteEditable
     && result.masteryNoteHidden
     && result.studyLogContentReadOnly
