@@ -14,6 +14,7 @@ function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(
 function settings() { const local = readJson(SETTINGS_KEY, {}); return { url: local.url || envSettings.url, publishableKey: local.publishableKey || envSettings.publishableKey }; }
 function runtime() { return readJson(RUNTIME_KEY, { activeStore: 'setup', accessToken: '', verification: null }); }
 function saveRuntime(value) { localStorage.setItem(RUNTIME_KEY, JSON.stringify(value)); return value; }
+function hasUsableRuntime(state = runtime()) { return state.activeStore === 'supabase' && Boolean(state.accessToken); }
 function normalizeUrl(value) { return String(value || '').trim().replace(/^(['"])(.*)\1$/, '$2').replace(/\/+$/, '').replace(/\/rest\/v1$/i, ''); }
 function validate(input) { const url = normalizeUrl(input?.url), publishableKey = String(input?.publishableKey || '').trim(); if (!url || !publishableKey) throw new Error('Supabase URLとPublishable Keyを入力してください。'); if (!/^https:\/\//.test(url)) throw new Error('Supabase URLはHTTPSを指定してください。'); if (!/^sb_publishable_[A-Za-z0-9._-]{8,}$/.test(publishableKey)) throw new Error('Publishable Keyは「sb_publishable_」で始まる公開キーを指定してください。'); return { url, publishableKey }; }
 
@@ -49,22 +50,22 @@ async function accessSql(token) {
 
 const webApi = {
   platform: 'web',
-  initialView: runtime().activeStore === 'supabase' ? 'summary' : 'settings',
-  async list(kind, query) { if (runtime().activeStore !== 'supabase') return []; return list(kind, query); }, get, save,
+  initialView: hasUsableRuntime() ? 'summary' : 'settings',
+  async list(kind, query) { if (!hasUsableRuntime()) return []; return list(kind, query); }, get, save,
   async due(kind) { const rows = await list(kind); return rows.filter(row => !row.last_reviewed_at); },
   async review(kind, id, result) { const row = await get(kind, id); let level = Number(row.forgetting_level) || 1; if (result === 'easy') level = Math.min(8, level + 1); if (result === 'hard') level = Math.max(1, level - 1); return save(kind, { ...row, forgetting_level: level, last_reviewed_at: new Date().toISOString() }); },
-  async listCurriculum() { return runtime().activeStore === 'supabase' ? listCurriculum() : []; },
+  async listCurriculum() { return hasUsableRuntime() ? listCurriculum() : []; },
   async saveCurriculum() { throw new Error('Web画面ではカリキュラムを編集できません。'); }, async moveCurriculum() {}, async linkCurriculumGrammar() {}, async unlinkCurriculumGrammar() {},
-  async listStudyLogs() { return runtime().activeStore === 'supabase' ? listStudyLogs() : []; },
+  async listStudyLogs() { return hasUsableRuntime() ? listStudyLogs() : []; },
   async getStudyLog(id) { return (await listStudyLogs()).find(row => Number(row.id) === Number(id)) || null; },
   async updateStudyLogNote(id, userNote) { await request('english_shelf_study_logs', `?id=eq.${Number(id)}`, { method: 'PATCH', body: { user_note: String(userNote || '').trim() } }); return this.getStudyLog(id); },
   async getSupabaseSettings() { return settings(); },
-  async saveSupabaseSettings(input) { const valid = validate(input); localStorage.setItem(SETTINGS_KEY, JSON.stringify(valid)); saveRuntime({ activeStore: 'setup', accessToken: '', verification: null }); return valid; },
+  async saveSupabaseSettings(input) { const valid = validate(input), previous = settings(), state = runtime(); localStorage.setItem(SETTINGS_KEY, JSON.stringify(valid)); if (valid.url !== normalizeUrl(previous.url) || valid.publishableKey !== previous.publishableKey) saveRuntime({ activeStore: 'setup', accessToken: '', verification: null }); else saveRuntime(state); return valid; },
   async checkSupabaseConnection(input) { const valid = validate(input), response = await fetch(`${valid.url}/rest/v1/__english_shelf_connection_probe__?select=id&limit=0`, { headers: { apikey: valid.publishableKey, Accept: 'application/json' } }); const text = await response.text(); let detail = {}; try { detail = JSON.parse(text); } catch {} if (response.ok || (response.status === 404 && /^PGRST\d+$/.test(detail.code || ''))) return { ok: true, message: 'Data APIへの読み取り接続を確認できました。' }; throw new Error(`接続確認失敗（HTTP ${response.status}）: URL、Publishable Key、Data API設定を確認してください。`); },
   async prepareSupabaseMigration() { throw new Error('SQLite移行はデスクトップ版で実行してください。'); }, async runSupabaseMigration() { throw new Error('SQLite移行はデスクトップ版で実行してください。'); },
-  async getDataStoreStatus() { const state = runtime(); return { activeStore: state.activeStore, migrationVerified: Boolean(state.verification) }; },
+  async getDataStoreStatus() { const state = runtime(); return { activeStore: hasUsableRuntime(state) ? 'supabase' : 'setup', migrationVerified: Boolean(state.verification), needsReauthorization: state.activeStore === 'supabase' && !state.accessToken }; },
   async prepareSupabaseAccess() { validate(settings()); const token = randomToken(); saveRuntime({ activeStore: 'setup', accessToken: token, verification: null }); return { setupSql: await accessSql(token) }; },
-  async verifySupabaseData() { const counts = { words: (await all('english_shelf_words')).length, sentences: (await all('english_shelf_sentences')).length, curriculum_units: (await all('english_shelf_curriculum_units')).length, curriculum_unit_grammar_items: (await all('english_shelf_curriculum_unit_grammar_items', 'unit_id.asc,grammar_item_id.asc')).length, study_logs: (await all('english_shelf_study_logs')).length }; const state = runtime(); saveRuntime({ ...state, verification: { counts, verifiedAt: new Date().toISOString() } }); return { counts }; },
+  async verifySupabaseData() { const [words, sentences, curriculumUnits, curriculumRelations, studyLogs] = await Promise.all([all('english_shelf_words'), all('english_shelf_sentences'), all('english_shelf_curriculum_units'), all('english_shelf_curriculum_unit_grammar_items', 'unit_id.asc,grammar_item_id.asc'), all('english_shelf_study_logs')]); const counts = { words: words.length, sentences: sentences.length, curriculum_units: curriculumUnits.length, curriculum_unit_grammar_items: curriculumRelations.length, study_logs: studyLogs.length }; const state = runtime(), previousTotal = Object.values(state.verification?.counts || {}).reduce((sum, value) => sum + Number(value || 0), 0), currentTotal = Object.values(counts).reduce((sum, value) => sum + value, 0); if (previousTotal > 0 && currentTotal === 0) throw new Error('以前確認したSupabaseデータを取得できません。端末認証SQLとRLS設定を再確認してください。'); saveRuntime({ ...state, verification: { counts, verifiedAt: new Date().toISOString() } }); return { counts }; },
   async enableSupabase() { const checked = await this.verifySupabaseData(); const state = runtime(); saveRuntime({ ...state, activeStore: 'supabase' }); return { activeStore: 'supabase', ...checked }; },
   async enableSqlite() { throw new Error('SQLiteはデスクトップ版専用です。'); }
 };

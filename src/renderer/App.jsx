@@ -68,7 +68,7 @@ function ActivityGraph({ logs, selectedDate, onSelect }) {
   </section>;
 }
 
-function Summary({ hidden, words, sentences, units, logs, selectedDate, onSelectDate, onReview }) {
+function Summary({ hidden, words, sentences, units, logs, loadError, selectedDate, onSelectDate, onReview }) {
   const average = units.length ? Math.round(units.reduce((sum, unit) => sum + (Number(unit.mastery_percent) || 0), 0) / units.length) : 0;
   const started = units.filter(unit => unit.status !== '未着手' || Number(unit.mastery_percent) > 0).length;
   const completed = units.filter(unit => Number(unit.mastery_percent) === 100).length;
@@ -77,6 +77,7 @@ function Summary({ hidden, words, sentences, units, logs, selectedDate, onSelect
   const cards = [['単語', words.length, '登録済み', 'summary-word-count'], ['英文・文法', sentences.length, '登録済み', 'summary-sentence-count'], ['カリキュラム', units.length, '単元', 'summary-unit-count'], ['平均理解度', `${average}%`, '全単元', 'summary-mastery-average'], ['学習開始済み', started, '単元', 'summary-started-count'], ['完了', completed, '理解度100%の単元', 'summary-completed-count']];
   return <section className="summary-view" id="summary-view" hidden={hidden}>
     <div className="summary-hero"><div><p className="eyebrow">TODAY&apos;S SHELF</p><h2>学習サマリ</h2><p>積み重ねた内容と、次に復習するものをひと目で確認できます。</p></div><Button id="start-review" className="review-start" onClick={onReview}><Sparkles size={17} />復習をはじめる</Button></div>
+    {loadError && <div className="migration-notice" role="alert"><Database size={18} /><div><strong>Supabaseデータを表示できません</strong><p>{loadError}</p></div></div>}
     <div className="summary-grid">{cards.map(([label, value, hint, id]) => <article className="summary-card" key={id}><span>{label}</span><strong id={id}>{value}</strong><small>{hint}</small></article>)}</div>
     <section className="summary-panel curriculum-progress-panel">
       <div className="summary-panel-heading"><div><p className="eyebrow">CURRICULUM PROGRESS</p><h2>カリキュラム進捗</h2></div><strong id="summary-progress-label">{average}%</strong></div>
@@ -276,12 +277,13 @@ function SupabaseSettings({ hidden }) {
 export default function App() {
   const [view, setView] = useState(api.initialView || 'summary'), [kind, setKind] = useState('words');
   const [words, setWords] = useState([]), [sentences, setSentences] = useState([]), [units, setUnits] = useState([]), [logs, setLogs] = useState([]);
+  const [loadError, setLoadError] = useState('');
   const [entries, setEntries] = useState([]), [search, setSearch] = useState(''), [libraryStatus, setLibraryStatus] = useState('');
   const [entryOpen, setEntryOpen] = useState(false), [editingEntry, setEditingEntry] = useState(null);
   const [selectedUnitId, setSelectedUnitId] = useState(null), [selectedDate, setSelectedDate] = useState(''), [selectedLogId, setSelectedLogId] = useState(null);
   const [reviewOpen, setReviewOpen] = useState(false), [reviewQueue, setReviewQueue] = useState([]);
   const searchRef = useRef(null), searchTimer = useRef(null);
-  const refreshAll = useCallback(async () => { const [nextWords, nextSentences, nextUnits, nextLogs] = await Promise.all([api.list('words', ''), api.list('sentences', ''), api.listCurriculum(), api.listStudyLogs()]); setWords(nextWords); setSentences(nextSentences); setUnits(nextUnits); setLogs(nextLogs); }, []);
+  const refreshAll = useCallback(async () => { try { const state = await api.getDataStoreStatus(); if (api.platform === 'web' && state.activeStore !== 'supabase') throw new Error(state.needsReauthorization ? '端末認証を再設定してください。保存済みのURLとPublishable Keyは維持されています。' : '設定画面でSupabaseを有効化するとデータが表示されます。'); const [nextWords, nextSentences, nextUnits, nextLogs] = await Promise.all([api.list('words', ''), api.list('sentences', ''), api.listCurriculum(), api.listStudyLogs()]); setWords(nextWords); setSentences(nextSentences); setUnits(nextUnits); setLogs(nextLogs); setLoadError(''); } catch (error) { setLoadError(error.message); } }, []);
   const refreshLibrary = useCallback(async (nextKind = kind, query = search) => { const next = await api.list(nextKind, query); setEntries(next); setLibraryStatus(`${next.length} 件`); }, [kind, search]);
   useEffect(() => { refreshAll(); }, [refreshAll]);
   useEffect(() => { if (view !== 'words' && view !== 'sentences') return; clearTimeout(searchTimer.current); searchTimer.current = setTimeout(() => refreshLibrary(kind, search), 180); return () => clearTimeout(searchTimer.current); }, [view, kind, search, refreshLibrary]);
@@ -299,7 +301,7 @@ export default function App() {
   return <>
     <main className="app-shell"><header className="topbar"><div className="brand"><span className="brand-mark"><BookOpen size={18} /></span><div><strong>English Shelf</strong><small>LOCAL STUDY DESK</small></div></div><span className="local-badge"><Check size={13} />この端末に保存</span></header>
       <nav className="tabs" aria-label="メインナビゲーション">{tabs.map(([id, label]) => <Button variant="ghost" className={`tab${activeTab === id ? ' active' : ''}`} data-kind={id} key={id} onClick={() => navigate(id)}>{label}</Button>)}</nav>
-      <Summary hidden={view !== 'summary'} words={words} sentences={sentences} units={units} logs={logs} selectedDate={selectedDate} onSelectDate={selectActivityDate} onReview={startReview} />
+      <Summary hidden={view !== 'summary'} words={words} sentences={sentences} units={units} logs={logs} loadError={loadError} selectedDate={selectedDate} onSelectDate={selectActivityDate} onReview={startReview} />
       <Library hidden={view !== 'words' && view !== 'sentences'} kind={kind} entries={entries} search={search} onSearch={value => { setSearch(value); setLibraryStatus('検索中…'); }} status={libraryStatus} onAdd={() => { setEditingEntry(null); setEntryOpen(true); }} onEdit={editEntry} searchRef={searchRef} />
       <CurriculumList hidden={view !== 'curriculum'} units={units} onOpenUnit={openUnit} onOpenGrammar={id => editEntry(id, 'sentences')} />
       <CurriculumDetail hidden={view !== 'curriculum-detail'} unit={selectedUnit} onBack={() => setView('curriculum')} onOpenGrammar={id => editEntry(id, 'sentences')} onOpenLog={openLog} />
