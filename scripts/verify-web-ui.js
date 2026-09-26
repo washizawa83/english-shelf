@@ -28,6 +28,14 @@ app.whenReady().then(async () => {
     const recordPage = element => { const rect = element?.getBoundingClientRect(); if (rect?.width) pageRects.push({ left: rect.left, right: rect.right, width: rect.width }); };
     const tabIcons = [...document.querySelectorAll('.tab-icon')];
     const tabLabels = [...document.querySelectorAll('.tab-label')];
+    const mobileNav = document.querySelector('.tabs');
+    const mobileNavRect = mobileNav.getBoundingClientRect();
+    const mobileNavTabs = [...mobileNav.querySelectorAll('.tab')];
+    const mobileBottomNavigation = getComputedStyle(mobileNav).position === 'fixed'
+      && Math.abs(mobileNavRect.bottom - window.innerHeight) < 1
+      && mobileNavTabs.length === 6
+      && mobileNavTabs.every(tab => tab.getBoundingClientRect().width >= 48 && tab.getBoundingClientRect().height >= 56)
+      && parseFloat(getComputedStyle(document.querySelector('.app-shell')).paddingBottom) >= mobileNavRect.height + 12;
     const globalHeaderRemoved = !document.querySelector('.topbar, .local-badge')
       && !document.body.innerText.includes('Supabaseに保存');
     const setDateValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
@@ -162,7 +170,8 @@ app.whenReady().then(async () => {
       mobileViewportFits: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
       mobileTabsUseIcons: tabIcons.length === 6
         && tabIcons.every(icon => getComputedStyle(icon).display !== 'none')
-        && tabLabels.every(label => getComputedStyle(label).position === 'absolute'),
+        && tabLabels.every(label => getComputedStyle(label).position === 'static' && label.innerText.trim()),
+      mobileBottomNavigation,
       activityFitsWithoutHorizontalScroll: Boolean(activityGrid && activityPanel)
         && activityGrid.scrollWidth <= activityPanel.clientWidth
         && activityGrid.getBoundingClientRect().right <= document.documentElement.clientWidth,

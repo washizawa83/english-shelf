@@ -92,6 +92,9 @@ test('mobile navigation uses icons and pull-to-refresh is connected', () => {
   assert.match(app, /onTouchStart=\{beginPull\}/);
   assert.match(app, /onTouchMove=\{movePull\}/);
   assert.match(app, /onTouchEnd=\{finishPull\}/);
+  assert.match(css, /@media \(max-width:760px\)[\s\S]*\.tabs \{[^}]*position:fixed;[^}]*bottom:0;/);
+  assert.match(css, /grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.tab-label \{[^}]*position:static;/);
 });
 
 test('tabs use only a bottom active indicator', () => {

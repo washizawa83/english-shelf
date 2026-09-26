@@ -43,6 +43,21 @@ app.whenReady().then(async () => {
       await new Promise(resolve => setTimeout(resolve, 400));
       const viewportWidth = window.innerWidth;
       const fitsViewport = element => { const rect = element?.getBoundingClientRect(); return Boolean(rect && rect.left >= 0 && rect.right <= viewportWidth); };
+      const nav = document.querySelector('.tabs');
+      const navRect = nav.getBoundingClientRect();
+      const navTabs = [...nav.querySelectorAll('.tab')];
+      const responsiveNavigation = viewportWidth <= 760
+        ? getComputedStyle(nav).position === 'fixed'
+          && Math.abs(navRect.bottom - window.innerHeight) < 1
+          && navTabs.length === 6
+          && navTabs.every(tab => tab.getBoundingClientRect().width >= 48 && tab.getBoundingClientRect().height >= 56)
+          && navTabs.every(tab => {
+            const label = tab.querySelector('.tab-label');
+            const icon = tab.querySelector('.tab-icon');
+            return label?.innerText.trim() && getComputedStyle(label).position === 'static' && getComputedStyle(icon).display !== 'none';
+          })
+          && parseFloat(getComputedStyle(document.querySelector('.app-shell')).paddingBottom) >= navRect.height + 12
+        : getComputedStyle(nav).position !== 'fixed';
       const pageRects = [];
       const recordPage = element => { const rect = element?.getBoundingClientRect(); if (rect?.width) pageRects.push({ left: rect.left, right: rect.right, width: rect.width }); };
       const formFitsDialog = dialog => Boolean(dialog && fitsViewport(dialog)
@@ -374,6 +389,17 @@ app.whenReady().then(async () => {
       const switchExplanationVisible = settingsView.innerText.includes('新規追加・更新・復習・学習記録')
         || settingsView.innerText.includes('接続確認と移行データ照合が完了するまで切替できません');
       return {
+        responsiveNavigation,
+        responsiveNavigationDiagnostics: {
+          viewportWidth,
+          position: getComputedStyle(nav).position,
+          bottomGap: Math.abs(navRect.bottom - window.innerHeight),
+          navHeight: navRect.height,
+          tabWidths: navTabs.map(tab => tab.getBoundingClientRect().width),
+          tabHeights: navTabs.map(tab => tab.getBoundingClientRect().height),
+          labelPositions: navTabs.map(tab => getComputedStyle(tab.querySelector('.tab-label')).position),
+          appPaddingBottom: parseFloat(getComputedStyle(document.querySelector('.app-shell')).paddingBottom)
+        },
         summaryInitial,
         globalHeaderRemoved,
         curriculumProgressSummary,
@@ -474,6 +500,7 @@ app.whenReady().then(async () => {
 
   console.log(JSON.stringify(result));
   const passed = result.libraryHidden
+    && result.responsiveNavigation
     && result.summaryInitial
     && result.globalHeaderRemoved
     && result.distributionFitsMobile
