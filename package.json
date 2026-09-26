@@ -1,0 +1,41 @@
+{
+  "name": "english-study-desktop",
+  "version": "1.0.0",
+  "description": "A lightweight local English study app",
+  "main": "src/main.js",
+  "scripts": {
+    "build:renderer": "vite build",
+    "build:web": "vite build --base=/",
+    "start": "npm run build:renderer && electron .",
+    "import:notion": "set ELECTRON_RUN_AS_NODE=1&& electron scripts/import-notion.js",
+    "verify:import": "set ELECTRON_RUN_AS_NODE=1&& electron scripts/verify-import.js",
+    "verify:curriculum": "set ELECTRON_RUN_AS_NODE=1&& electron scripts/verify-curriculum.js",
+    "seed:curriculum": "set ELECTRON_RUN_AS_NODE=1&& electron scripts/seed-approved-curriculum.js",
+    "seed:curriculum-details": "set ELECTRON_RUN_AS_NODE=1&& electron scripts/seed-curriculum-details.js",
+    "seed:initial-study-log": "set ELECTRON_RUN_AS_NODE=1&& electron scripts/seed-initial-study-log.js",
+    "test": "npm run build:renderer && set ELECTRON_RUN_AS_NODE=1&& electron --test test/*.test.js",
+    "verify:ui": "npm run build:renderer && electron scripts/verify-tab-visibility.js",
+    "verify:web": "npm run build:web && electron scripts/verify-web-ui.js",
+    "postinstall": "electron-rebuild -f -w better-sqlite3"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.2.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "electron": "^39.2.7",
+    "vite": "^8.3.1"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.23",
+    "@radix-ui/react-select": "^2.3.7",
+    "@radix-ui/react-slot": "^1.3.3",
+    "better-sqlite3": "^12.6.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.48.0",
+    "mysql2": "^3.24.4",
+    "pg": "^8.23.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tailwind-merge": "^3.7.0"
+  }
+}

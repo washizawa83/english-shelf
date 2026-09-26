@@ -1,0 +1,25 @@
+{
+  "name": "english-shelf",
+  "version": "1.0.0+codex.20260926073723",
+  "description": "Manage English Shelf study content, curriculum, reviews, and meaningful learning records from Codex.",
+  "author": {
+    "name": "English Shelf"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "English Shelf",
+    "shortDescription": "Study, review, and capture meaningful English progress.",
+    "longDescription": "Uses the same local SQLite database as the English Shelf Windows app to manage words, sentences, curriculum units, spaced reviews, and concise learning records at meaningful study milestones.",
+    "developerName": "English Shelf",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write", "Local"],
+    "defaultPrompt": [
+      "Show the English words due for review.",
+      "Save a new English word with its meaning and example.",
+      "Search my English sentences for a phrase.",
+      "Study the next curriculum unit and record the learning at a natural milestone."
+    ],
+    "brandColor": "#176B56"
+  },
+  "mcpServers": "./.mcp.json"
+}

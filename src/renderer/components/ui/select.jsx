@@ -1,0 +1,10 @@
+import React from 'react';
+import * as SelectPrimitive from '@radix-ui/react-select';
+import { Check, ChevronDown } from 'lucide-react';
+import { cn } from '../../lib/utils';
+export const Select = SelectPrimitive.Root;
+export const SelectValue = SelectPrimitive.Value;
+export const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) => <SelectPrimitive.Trigger ref={ref} className={cn('select-trigger', className)} {...props}>{children}<SelectPrimitive.Icon><ChevronDown size={16} /></SelectPrimitive.Icon></SelectPrimitive.Trigger>);
+export const SelectContent = React.forwardRef(({ className, children, ...props }, ref) => <SelectPrimitive.Portal><SelectPrimitive.Content ref={ref} className={cn('select-content', className)} position="popper" {...props}><SelectPrimitive.Viewport>{children}</SelectPrimitive.Viewport></SelectPrimitive.Content></SelectPrimitive.Portal>);
+export const SelectItem = React.forwardRef(({ className, children, ...props }, ref) => <SelectPrimitive.Item ref={ref} className={cn('select-item', className)} {...props}><span className="select-check"><SelectPrimitive.ItemIndicator><Check size={15} /></SelectPrimitive.ItemIndicator></span><SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText></SelectPrimitive.Item>);
+SelectTrigger.displayName = 'SelectTrigger'; SelectContent.displayName = 'SelectContent'; SelectItem.displayName = 'SelectItem';

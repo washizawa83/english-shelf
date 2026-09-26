@@ -1,0 +1,10 @@
+import React from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+import { cn } from '../../lib/utils';
+export const Dialog = DialogPrimitive.Root;
+export const DialogClose = DialogPrimitive.Close;
+export const DialogTitle = React.forwardRef(({ className, ...props }, ref) => <DialogPrimitive.Title ref={ref} className={cn('dialog-title', className)} {...props} />);
+export const DialogDescription = React.forwardRef(({ className, ...props }, ref) => <DialogPrimitive.Description ref={ref} className={cn('dialog-description', className)} {...props} />);
+export const DialogContent = React.forwardRef(({ className, children, showClose = true, ...props }, ref) => <DialogPrimitive.Portal><DialogPrimitive.Overlay className="dialog-overlay" /><DialogPrimitive.Content ref={ref} className={cn('dialog-content', className)} {...props}>{children}{showClose && <DialogPrimitive.Close className="dialog-close" aria-label="閉じる"><X size={18} /></DialogPrimitive.Close>}</DialogPrimitive.Content></DialogPrimitive.Portal>);
+DialogTitle.displayName = 'DialogTitle'; DialogDescription.displayName = 'DialogDescription'; DialogContent.displayName = 'DialogContent';

@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "english_shelf": {
+      "command": "node",
+      "cwd": "C:/Users/haruya/Documents/Codex/2026-09-26/english-study-desktop-app",
+      "args": ["plugins/english-shelf/server/index.js"],
+      "enabled": true,
+      "startup_timeout_sec": 10,
+      "tool_timeout_sec": 30,
+      "env": {
+        "ENGLISH_SHELF_DB": "C:/Users/haruya/Documents/Codex/2026-09-26/english-study-desktop-app/data/english-study.db"
+      }
+    }
+  }
+}

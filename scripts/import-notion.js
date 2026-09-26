@@ -1,0 +1,12 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const { StudyDatabase } = require('../src/database');
+const source = require('../src/imported-notion-data');
+const bodies = require('../src/notion-page-bodies');
+const dataDirectory = path.join(__dirname, '..', 'data');
+fs.mkdirSync(dataDirectory, { recursive: true });
+const db = new StudyDatabase(path.join(dataDirectory, 'english-study.db'));
+db.importNotion('words', source.words, bodies);
+db.importNotion('sentences', source.sentences, bodies);
+console.log(JSON.stringify(db.counts()));
+db.close();

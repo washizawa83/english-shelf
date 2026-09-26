@@ -1,0 +1,13 @@
+node_modules/
+data/
+dist/
+artifacts/
+outputs/
+work/
+.vercel/
+.env
+.env.*
+!.env.example
+*.db
+*.db-shm
+*.db-wal
