@@ -76,7 +76,7 @@ function ActivityGraph({ logs, selectedDate, onSelect }) {
     });
   }, [logs]);
   return <section className="activity-panel">
-    <div className="activity-heading"><div><p className="eyebrow">DAILY ACTIVITY</p><h2>学習の積み重ね</h2></div></div>
+    <div className="activity-heading"><h2>学習の積み重ね</h2></div>
     <div id="study-activity-grid" className="activity-grid" aria-label="日ごとの学習記録数">
       {days.map(day => <button key={day.key} type="button" className={`activity-day level-${Math.min(4, day.count)}${selectedDate === day.key ? ' selected' : ''}`} data-filter-date={day.key} title={`${day.label}: ${day.count}件`} aria-label={`${day.label} ${day.count}件`} disabled={day.future} onClick={() => onSelect(day.key)} />)}
     </div>
@@ -96,12 +96,12 @@ function Summary({ hidden, words, sentences, units, logs, loadError, selectedDat
     {loadError && <div className="migration-notice" role="alert"><Database size={18} /><div><strong>Supabaseデータを表示できません</strong><p>{loadError}</p></div></div>}
     <div className="summary-grid">{cards.map(([label, value, hint, id]) => <article className="summary-card" key={id}><span>{label}</span><strong id={id}>{value}</strong><small>{hint}</small></article>)}</div>
     <section className="summary-panel curriculum-progress-panel">
-      <div className="summary-panel-heading"><div><p className="eyebrow">CURRICULUM PROGRESS</p><h2>カリキュラム進捗</h2></div><strong id="summary-progress-label">{average}%</strong></div>
+      <div className="summary-panel-heading"><h2>カリキュラム進捗</h2><strong id="summary-progress-label">{average}%</strong></div>
       <div className="summary-progress-track" aria-label="カリキュラム平均理解度"><span id="summary-mastery-bar" style={{ width: `${average}%` }} /></div>
       <div className="summary-progress-caption"><span><b id="summary-progress-started">{started}</b> 開始済み</span><span><b id="summary-progress-completed">{completed}</b> 完了</span><span><b id="summary-progress-total">{units.length}</b> 全単元</span></div>
     </section>
     <section className="summary-panel forgetting-panel">
-      <div className="summary-panel-heading"><div><p className="eyebrow">REVIEW LEVELS</p><h2>忘却レベルの分布</h2></div><div className="distribution-legend"><span><i className="word-swatch" />単語</span><span><i className="sentence-swatch" />英文</span></div></div>
+      <div className="summary-panel-heading"><h2>忘却レベルの分布</h2><div className="distribution-legend"><span><i className="word-swatch" />単語</span><span><i className="sentence-swatch" />英文</span></div></div>
       <div id="forgetting-distribution-chart" className="forgetting-chart" aria-label="単語と英文の忘却レベル分布">{wordCounts.map((wordCount, index) => <div className="level-group" key={index}><div className="bar-pair"><div className="bar-column"><span>{wordCount}</span><i className="distribution-bar word-bar" style={{ height: `${(wordCount / maximum) * 100}%` }} aria-label={`レベル${index + 1} 単語 ${wordCount}件`} /></div><div className="bar-column"><span>{sentenceCounts[index]}</span><i className="distribution-bar sentence-bar" style={{ height: `${(sentenceCounts[index] / maximum) * 100}%` }} aria-label={`レベル${index + 1} 英文 ${sentenceCounts[index]}件`} /></div></div><strong>Lv.{index + 1}</strong></div>)}</div>
     </section>
     <ActivityGraph logs={logs} selectedDate={selectedDate} onSelect={onSelectDate} />

@@ -41,7 +41,7 @@ select { border:1px solid #cfd8d0; background:#fbfcfa; border-radius:8px; paddin
 .study-log-view { display:grid; grid-template-columns:1fr; gap:20px; }
 .study-log-detail-screen { display:grid; gap:14px; width:100%; }
 .activity-panel { grid-column:1/-1; background:white; border:1px solid var(--line); border-radius:18px; padding:22px 26px; overflow:hidden; }
-.activity-heading { display:flex; justify-content:space-between; align-items:end; gap:18px; margin-bottom:18px; }
+.activity-heading { display:flex; justify-content:space-between; align-items:end; gap:18px; margin-bottom:14px; }
 .date-filter { display:flex; flex:0 1 290px; align-items:center; justify-content:flex-end; gap:9px; min-width:0; }
 .date-filter-label { flex:none; color:var(--muted); font-size:12px; font-weight:700; }
 .study-log-view,.study-log-view > *,.study-log-heading,.date-filter,.date-input-shell { min-width:0; max-width:100%; }
@@ -71,7 +71,7 @@ button.activity-day:hover { outline:2px solid #7aa892; outline-offset:1px; }
 .activity-legend { display:flex; justify-content:flex-end; align-items:center; gap:5px; margin-top:12px; color:var(--muted); font-size:11px; }
 .activity-legend .activity-day { display:inline-block; }
 .summary-panel { background:white; border:1px solid var(--line); border-radius:18px; padding:22px 26px; }
-.summary-panel-heading { display:flex; align-items:end; justify-content:space-between; gap:18px; margin-bottom:18px; }
+.summary-panel-heading { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:14px; }
 .summary-panel-heading > strong { color:var(--accent); font:600 28px "Shippori Mincho",serif; }
 .summary-progress-track { height:11px; overflow:hidden; border-radius:999px; background:#e8ece7; }
 .summary-progress-track span { display:block; width:0; height:100%; border-radius:inherit; background:linear-gradient(90deg,#78b28e,var(--accent)); transition:width .2s ease; }

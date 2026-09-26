@@ -42,6 +42,10 @@ test('summary retains metrics, review distribution, progress, and activity graph
   assert.match(app, /53 \* 7/);
   assert.match(app, /unit\.status !== '未着手'/);
   assert.match(app, /Number\(unit\.mastery_percent\) === 100/);
+  assert.doesNotMatch(app, /DAILY ACTIVITY|CURRICULUM PROGRESS|REVIEW LEVELS/);
+  assert.match(app, /学習の積み重ね/);
+  assert.match(app, /カリキュラム進捗/);
+  assert.match(app, /忘却レベルの分布/);
 });
 
 test('entry forms use Shadcn-style primitives and default new records to level one', () => {
