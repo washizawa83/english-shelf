@@ -87,7 +87,13 @@ app.whenReady().then(async () => {
       const addButtonVisible = document.querySelector('#add-entry')?.textContent === '単語を追加';
       const firstWordCard = document.querySelector('.word-entry-card');
       const wordCardComplete = Boolean(firstWordCard?.querySelector('.inflection-chip'))
-        && ['変形', '意味', '例文', '最終復習日', '忘却 Lv.'].every(label => firstWordCard.innerText.includes(label));
+        && ['変形', '例文', '最終復習日', '忘却 Lv.', '意味を表示', '編集'].every(label => firstWordCard.innerText.includes(label));
+      const wordMeaningHiddenByDefault = !firstWordCard?.querySelector('.meaning-field')
+        && !firstWordCard?.innerText.includes('日本語訳');
+      firstWordCard?.querySelector('[data-toggle-meaning]')?.click();
+      await new Promise(resolve => setTimeout(resolve, 30));
+      const wordMeaningCanToggle = Boolean(firstWordCard?.querySelector('.meaning-field'))
+        && firstWordCard?.querySelector('[data-toggle-meaning]')?.getAttribute('aria-expanded') === 'true';
       document.querySelector('#add-entry')?.click();
       await new Promise(resolve => setTimeout(resolve, 80));
       const addDialog = document.querySelector('#entry-dialog');
@@ -98,12 +104,23 @@ app.whenReady().then(async () => {
       const addInflectionVisible = Boolean(addDialog?.querySelector('[name="inflection"]'));
       addDialog?.querySelector('.dialog-close')?.click();
       await new Promise(resolve => setTimeout(resolve, 80));
-      document.querySelector('.entry-card')?.click();
+      document.querySelector('.word-entry-card')?.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+      const cardClickDoesNotEdit = document.querySelector('#entry-dialog')?.dataset.state !== 'open';
+      document.querySelector('.word-entry-card [data-edit-entry]')?.click();
       await new Promise(resolve => setTimeout(resolve, 100));
       const editDialog = document.querySelector('#entry-dialog');
       const editModalOpen = editDialog?.dataset.state === 'open';
       const editKeepsForgettingLevel = Boolean(editDialog?.querySelector('[name="forgetting_level"]'));
       editDialog?.querySelector('.dialog-close')?.click();
+      document.querySelector('[data-kind="sentences"]')?.click();
+      await new Promise(resolve => setTimeout(resolve, 250));
+      const firstSentenceCard = document.querySelector('.sentence-entry-card');
+      const sentenceMeaningHiddenByDefault = Boolean(firstSentenceCard)
+        && !firstSentenceCard.querySelector('.meaning-field');
+      firstSentenceCard?.querySelector('[data-toggle-meaning]')?.click();
+      await new Promise(resolve => setTimeout(resolve, 30));
+      const sentenceMeaningCanToggle = Boolean(firstSentenceCard?.querySelector('.meaning-field'));
       document.querySelector('[data-kind="curriculum"]').click();
       await new Promise(resolve => setTimeout(resolve, 100));
       const library = document.querySelector('#library-workspace');
@@ -180,12 +197,17 @@ app.whenReady().then(async () => {
         libraryUsesFullWidth,
         addButtonVisible,
         wordCardComplete,
+        wordMeaningHiddenByDefault,
+        wordMeaningCanToggle,
         addModalOpen,
         addForgettingLevelHidden,
         addLevelOneExplanation,
         addInflectionVisible,
+        cardClickDoesNotEdit,
         editModalOpen,
         editKeepsForgettingLevel,
+        sentenceMeaningHiddenByDefault,
+        sentenceMeaningCanToggle,
         libraryHidden: library.hidden,
         libraryDisplay: getComputedStyle(library).display,
         curriculumHidden: curriculum.hidden,
@@ -243,12 +265,17 @@ app.whenReady().then(async () => {
     && result.libraryUsesFullWidth
     && result.addButtonVisible
     && result.wordCardComplete
+    && result.wordMeaningHiddenByDefault
+    && result.wordMeaningCanToggle
     && result.addModalOpen
     && result.addForgettingLevelHidden
     && result.addLevelOneExplanation
     && result.addInflectionVisible
+    && result.cardClickDoesNotEdit
     && result.editModalOpen
     && result.editKeepsForgettingLevel
+    && result.sentenceMeaningHiddenByDefault
+    && result.sentenceMeaningCanToggle
     && !result.menuBarVisible
     && result.libraryDisplay === 'none'
     && result.curriculumHidden

@@ -113,7 +113,8 @@ test('setup SQL uses RLS and a hashed one-time token, and migration verifies con
 test('renderer exposes settings, connection verification, and explicit migration confirmation', () => {
   const appSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'App.jsx'), 'utf8');
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'main.js'), 'utf8');
-  assert.match(appSource, /Supabase接続設定/);
+  assert.match(appSource, /<h3>Data API<\/h3>/);
+  assert.doesNotMatch(appSource, /<h2>Supabase接続設定<\/h2>/);
   assert.match(appSource, /DBパスワード、Secret Key、Service Role Keyは受け付けません/);
   assert.match(appSource, /ローカルSQLiteは削除・上書きされません/);
   assert.match(mainSource, /settings:supabase:check/);

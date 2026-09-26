@@ -21,15 +21,36 @@ app.whenReady().then(async () => {
   const result = await window.webContents.executeJavaScript(`(async () => {
     await new Promise(resolve => setTimeout(resolve, 600));
     const settings = document.querySelector('#settings-view');
+    const tabIcons = [...document.querySelectorAll('.tab-icon')];
+    const tabLabels = [...document.querySelectorAll('.tab-label')];
+    document.querySelector('[data-kind="summary"]')?.click();
+    await new Promise(resolve => setTimeout(resolve, 80));
+    const activityGrid = document.querySelector('#study-activity-grid');
+    const activityPanel = activityGrid?.closest('.activity-panel');
+    document.querySelector('[data-kind="study-logs"]')?.click();
+    await new Promise(resolve => setTimeout(resolve, 80));
+    const dateControl = document.querySelector('.date-input-control');
+    const dateRect = dateControl?.getBoundingClientRect();
+    const dateFitsViewport = Boolean(dateRect && dateRect.left >= 0 && dateRect.right <= document.documentElement.clientWidth);
+    document.querySelector('[data-kind="settings"]')?.click();
+    await new Promise(resolve => setTimeout(resolve, 30));
     return {
       settingsVisible: Boolean(settings && !settings.hidden),
       startsOnSettings: document.querySelector('.tab.active')?.dataset.kind === 'settings',
       onlyPublicFields: settings?.querySelectorAll('#supabase-url, #supabase-publishable-key').length === 2,
       desktopMigrationHidden: !settings?.innerText.includes('SQLiteからSupabaseへ移行'),
       webSetupVisible: settings?.innerText.includes('SupabaseをWeb版で使用する'),
-      diagnosticsVisible: settings?.querySelector('#web-diagnostics')?.innerText.includes('Build 2026.09.26.5'),
+      diagnosticsRemoved: !settings?.querySelector('#web-diagnostics') && !settings?.innerText.includes('PWA接続診断'),
       activationDisabled: settings ? [...settings.querySelectorAll('button')].find(button => button.textContent === 'Supabaseを使用する')?.disabled === true : false,
       mobileViewportFits: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      mobileTabsUseIcons: tabIcons.length === 6
+        && tabIcons.every(icon => getComputedStyle(icon).display !== 'none')
+        && tabLabels.every(label => getComputedStyle(label).position === 'absolute'),
+      activityFitsWithoutHorizontalScroll: Boolean(activityGrid && activityPanel)
+        && activityGrid.scrollWidth <= activityPanel.clientWidth
+        && activityGrid.getBoundingClientRect().right <= document.documentElement.clientWidth,
+      dateControlFitsViewport: dateFitsViewport,
+      pullRefreshAvailable: Boolean(document.querySelector('.pull-refresh')),
       manifestLinked: Boolean(document.querySelector('link[rel="manifest"]')),
       touchIconLinked: Boolean(document.querySelector('link[rel="apple-touch-icon"]')),
       bodyText: document.body.innerText.slice(0, 200)

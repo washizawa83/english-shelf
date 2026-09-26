@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Check, ChevronLeft, Copy, Database, Search, ShieldCheck, Sparkles } from 'lucide-react';
+import { BookOpen, BookText, Check, ChevronLeft, Copy, Database, Eye, EyeOff, GraduationCap, LayoutDashboard, NotebookPen, Pencil, Search, Settings, ShieldCheck, Sparkles, TextCursorInput } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Textarea } from './components/ui/textarea';
@@ -13,7 +13,14 @@ const configs = {
   words: { singular: '単語', heading: '単語一覧', primary: 'vocabulary', secondary: 'meaning', detail: 'example' },
   sentences: { singular: '英文・文法', heading: '英文・文法一覧', primary: 'title', secondary: 'meaning', detail: 'similar_sentences' }
 };
-const tabs = [['summary', 'サマリ'], ['words', '単語'], ['sentences', '英文・文法'], ['curriculum', 'カリキュラム'], ['study-logs', '学習記録'], ['settings', '設定']];
+const tabs = [
+  { id: 'summary', label: 'サマリ', Icon: LayoutDashboard },
+  { id: 'words', label: '単語', Icon: TextCursorInput },
+  { id: 'sentences', label: '英文', Icon: BookText },
+  { id: 'curriculum', label: 'カリキュラム', Icon: GraduationCap },
+  { id: 'study-logs', label: '学習記録', Icon: NotebookPen },
+  { id: 'settings', label: '設定', Icon: Settings }
+];
 
 function formatRecordedAt(value) {
   const date = new Date(value);
@@ -76,7 +83,7 @@ function Summary({ hidden, words, sentences, units, logs, loadError, selectedDat
   const maximum = Math.max(1, ...wordCounts, ...sentenceCounts);
   const cards = [['単語', words.length, '登録済み', 'summary-word-count'], ['英文・文法', sentences.length, '登録済み', 'summary-sentence-count'], ['カリキュラム', units.length, '単元', 'summary-unit-count'], ['平均理解度', `${average}%`, '全単元', 'summary-mastery-average'], ['学習開始済み', started, '単元', 'summary-started-count'], ['完了', completed, '理解度100%の単元', 'summary-completed-count']];
   return <section className="summary-view" id="summary-view" hidden={hidden}>
-    <div className="summary-hero"><div><p className="eyebrow">TODAY&apos;S SHELF</p><h2>学習サマリ</h2><p>積み重ねた内容と、次に復習するものをひと目で確認できます。</p></div><Button id="start-review" className="review-start" onClick={onReview}><Sparkles size={17} />復習をはじめる</Button></div>
+    <div className="summary-hero"><p>積み重ねた内容と、次に復習するものをひと目で確認できます。</p><Button id="start-review" className="review-start" onClick={onReview}><Sparkles size={17} />復習をはじめる</Button></div>
     {loadError && <div className="migration-notice" role="alert"><Database size={18} /><div><strong>Supabaseデータを表示できません</strong><p>{loadError}</p></div></div>}
     <div className="summary-grid">{cards.map(([label, value, hint, id]) => <article className="summary-card" key={id}><span>{label}</span><strong id={id}>{value}</strong><small>{hint}</small></article>)}</div>
     <section className="summary-panel curriculum-progress-panel">
@@ -128,24 +135,29 @@ function EntryDialog({ open, onOpenChange, kind, entry, onSaved }) {
   </DialogContent></Dialog>;
 }
 
+function LibraryEntryCard({ kind, entry, onEdit }) {
+  const [meaningVisible, setMeaningVisible] = useState(false);
+  const word = kind === 'words';
+  return <article className={`entry-card${word ? ' word-entry-card' : ' sentence-entry-card'}`} data-id={entry.id}>
+    <div className="entry-card-head"><strong>{word ? entry.vocabulary : entry.title}</strong>{word && <span className="level-badge">忘却 Lv.{entry.forgetting_level || 1}</span>}</div>
+    {word && <div className="entry-field"><b>変形</b><span className="inflection-list">{splitInflections(entry.inflection).map((form, index) => <span className="inflection-chip" key={`${entry.id}-${index}`}>{form}</span>)}</span></div>}
+    {meaningVisible && <div className="entry-field meaning-field"><b>意味</b><span>{entry.meaning || '未登録'}</span></div>}
+    {word && <div className="entry-field"><b>例文</b><span>{entry.example || '未登録'}</span></div>}
+    {!word && entry.similar_sentences && <small>{entry.similar_sentences}</small>}
+    <div className="entry-card-footer"><span>{word && <><b>最終復習日</b> {formatReviewDate(entry.last_reviewed_at)}</>}</span><span className="entry-card-actions"><Button type="button" variant="ghost" size="sm" data-toggle-meaning aria-expanded={meaningVisible} onClick={() => setMeaningVisible(value => !value)}>{meaningVisible ? <EyeOff size={15} /> : <Eye size={15} />}{meaningVisible ? '意味を隠す' : '意味を表示'}</Button><Button type="button" variant="outline" size="sm" data-edit-entry onClick={() => onEdit(entry.id)}><Pencil size={14} />編集</Button></span></div>
+  </article>;
+}
+
 function Library({ hidden, kind, entries, search, onSearch, status, onAdd, onEdit, searchRef }) {
   const config = configs[kind];
   return <section className="workspace" id="library-workspace" hidden={hidden}><section className="list-panel library-list-panel">
-    <div className="list-toolbar"><div><p className="eyebrow">YOUR LIBRARY</p><h2 id="list-title">{config.heading}</h2></div><div className="library-tools"><div className="search-area"><Label className="search"><Search size={16} /><Input ref={searchRef} id="search" type="search" placeholder="検索" value={search} onChange={e => onSearch(e.target.value)} /></Label><kbd>Ctrl+F: 検索</kbd></div><Button id="add-entry" type="button" onClick={onAdd}>{config.singular}を追加</Button></div></div>
-    <div id="status" className="status">{status || `${entries.length} 件`}</div><div id="entry-list" className="entry-list">{entries.length ? entries.map(entry => kind === 'words'
-      ? <Button variant="outline" className="entry-card word-entry-card" data-id={entry.id} key={entry.id} onClick={() => onEdit(entry.id)}>
-          <span className="entry-card-head"><strong>{entry.vocabulary}</strong><span className="level-badge">忘却 Lv.{entry.forgetting_level || 1}</span></span>
-          <span className="entry-field"><b>変形</b><span className="inflection-list">{splitInflections(entry.inflection).map((form, index) => <span className="inflection-chip" key={`${entry.id}-${index}`}>{form}</span>)}</span></span>
-          <span className="entry-field"><b>意味</b><span>{entry.meaning || '未登録'}</span></span>
-          <span className="entry-field"><b>例文</b><span>{entry.example || '未登録'}</span></span>
-          <span className="entry-card-footer"><span><b>最終復習日</b> {formatReviewDate(entry.last_reviewed_at)}</span><em>編集する →</em></span>
-        </Button>
-      : <Button variant="outline" className="entry-card" data-id={entry.id} key={entry.id} onClick={() => onEdit(entry.id)}><strong>{entry[config.primary]}</strong><span>{entry[config.secondary]}</span>{entry[config.detail] && <small>{entry[config.detail]}</small>}<em>編集する →</em></Button>) : <div className="empty">まだ{config.singular}がありません。「追加」から登録できます。</div>}</div>
+    <div className="list-toolbar"><div className="library-tools"><Label className="search"><Search size={16} /><Input ref={searchRef} id="search" type="search" placeholder={`${config.singular}を検索`} value={search} onChange={e => onSearch(e.target.value)} /></Label><Button id="add-entry" type="button" onClick={onAdd}>{config.singular}を追加</Button></div></div>
+    <div id="status" className="status">{status || `${entries.length} 件`}</div><div id="entry-list" className="entry-list">{entries.length ? entries.map(entry => <LibraryEntryCard kind={kind} entry={entry} onEdit={onEdit} key={entry.id} />) : <div className="empty">まだ{config.singular}がありません。「追加」から登録できます。</div>}</div>
   </section></section>;
 }
 
 function CurriculumList({ hidden, units, onOpenUnit, onOpenGrammar }) {
-  return <section className="curriculum-view" id="curriculum-view" hidden={hidden}><section className="list-panel"><div className="panel-heading"><div><p className="eyebrow">LEARNING PATH</p><h2>カリキュラム</h2></div><span id="curriculum-status" className="status">{units.length} 単元</span></div><div id="curriculum-list" className="curriculum-list">{units.length ? units.map((unit, index) => {
+  return <section className="curriculum-view" id="curriculum-view" hidden={hidden}><section className="list-panel"><div className="view-status-row"><span id="curriculum-status" className="status">{units.length} 単元</span></div><div id="curriculum-list" className="curriculum-list">{units.length ? units.map((unit, index) => {
     const mastery = Math.max(0, Math.min(100, Number(unit.mastery_percent) || 0));
     return <article className="curriculum-card" data-unit-id={unit.id} role="button" tabIndex={0} key={unit.id} onClick={() => onOpenUnit(unit.id)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpenUnit(unit.id); } }}><div className="curriculum-card-head"><div><span className="order-badge">UNIT {index + 1}</span><h3>{unit.title}</h3></div><span className="mastery-badge">理解度 {mastery}%</span></div><div className="mastery-track" aria-label={`理解度 ${mastery}%`}><span style={{ width: `${mastery}%` }} /></div><p className="curriculum-objective">{unit.learning_objective || '学習目標は未設定です。'}</p><div className="relations"><strong>関連する英文・文法</strong>{unit.grammar_items.length ? unit.grammar_items.map(item => <div className="relation-row" key={item.id}><span>{item.title}</span><Button variant="outline" size="sm" data-action="open" data-grammar-id={item.id} onClick={event => { event.stopPropagation(); onOpenGrammar(item.id); }}>開く</Button></div>) : <small>関連する英文・文法はまだありません。</small>}</div><span className="detail-link">詳しく学ぶ →</span></article>;
   }) : <div className="empty">まだ単元が登録されていません。</div>}</div></section></section>;
@@ -169,10 +181,10 @@ function CurriculumDetail({ hidden, unit, onBack, onOpenGrammar, onOpenLog }) {
 
 function StudyLogs({ hidden, logs, selectedDate, onDate, selectedId, onSelect, onOpenUnit, onUpdateNote }) {
   const filtered = selectedDate ? logs.filter(log => formatDateKey(log.recorded_at) === selectedDate) : logs;
-  const selected = filtered.find(log => log.id === Number(selectedId)) || filtered[0];
-  return <section className="study-log-view" id="study-log-view" hidden={hidden}><aside className="list-panel"><div className="panel-heading study-log-heading"><div><p className="eyebrow">LEARNING TIMELINE</p><h2>学習記録</h2><span id="study-log-count" className="status">{selectedDate ? `${selectedDate} · ${filtered.length} 件` : `${filtered.length} 件`}</span></div><div className="date-filter"><Label>日付を指定<span className="date-input-control"><Input id="study-log-date-filter" type="date" max={formatDateKey(new Date())} value={selectedDate} onChange={event => onDate(event.target.value)} /><Button id="clear-study-log-date" className="date-clear-inside" type="button" variant="ghost" size="icon" aria-label="日付選択を解除" hidden={!selectedDate} onClick={() => onDate('')}>×</Button></span></Label></div></div>
+  const selected = filtered.find(log => log.id === Number(selectedId)) || null;
+  return <section className={`study-log-view${selected ? ' detail-open' : ''}`} id="study-log-view" hidden={hidden}><aside className="list-panel"><div className="panel-heading study-log-heading"><span id="study-log-count" className="status">{selectedDate ? `${selectedDate} · ${filtered.length} 件` : `${filtered.length} 件`}</span><div className="date-filter"><Label>日付を指定<span className="date-input-control"><Input id="study-log-date-filter" type="date" max={formatDateKey(new Date())} value={selectedDate} onChange={event => onDate(event.target.value)} /><Button id="clear-study-log-date" className="date-clear-inside" type="button" variant="ghost" size="icon" aria-label="日付選択を解除" hidden={!selectedDate} onClick={() => onDate('')}>×</Button></span></Label></div></div>
     <div id="study-log-list" className="study-log-list">{filtered.length ? filtered.map(log => <Button variant="outline" className="study-log-card" data-study-log-id={log.id} key={log.id} onClick={() => onSelect(log.id)}><time>{formatRecordedAt(log.recorded_at)}</time><strong>{log.title}</strong><span>{log.curriculum_unit_title || '関連単元なし'}</span></Button>) : <div className="empty">{selectedDate ? 'この日の学習記録はありません。' : '学習記録はまだありません。Codexに「今の話を記録して」と伝えると追加できます。'}</div>}</div></aside>
-    <section className="list-panel" id="study-log-detail">{selected ? <StudyLogDetail log={selected} onOpenUnit={onOpenUnit} onUpdateNote={onUpdateNote} /> : <div className="empty">この日の学習記録はありません。</div>}</section>
+    {selected && <section className="list-panel" id="study-log-detail"><StudyLogDetail log={selected} onOpenUnit={onOpenUnit} onUpdateNote={onUpdateNote} /></section>}
   </section>;
 }
 
@@ -247,9 +259,8 @@ function SupabaseSettings({ hidden }) {
     catch (error) { setStatus(error.message); } finally { setBusy(false); }
   }
   const countLabels = { words: '単語', sentences: '英文・文法', curriculum_units: 'カリキュラム', curriculum_unit_grammar_items: '関連付け', study_logs: '学習記録' };
-  const diagnostics = storeState.diagnostics;
   return <section className="settings-view" id="settings-view" hidden={hidden}>
-    <header className="settings-heading"><div><p className="eyebrow">DATA CONNECTION</p><h2>Supabase接続設定</h2><p>現在の読み書き先: <strong>{storeState.activeStore === 'supabase' ? 'Supabase' : isWeb ? '未設定' : 'ローカルSQLite'}</strong></p></div><span className={`connection-badge${verified ? ' verified' : ''}`}>{storeState.activeStore === 'supabase' ? <><ShieldCheck size={15} />Supabaseを使用中</> : verified ? <><ShieldCheck size={15} />接続確認済み</> : <><Database size={15} />{isWeb ? '初期設定が必要' : 'SQLiteが既定'}</>}</span></header>
+    <header className="settings-heading"><p>現在の読み書き先: <strong>{storeState.activeStore === 'supabase' ? 'Supabase' : isWeb ? '未設定' : 'ローカルSQLite'}</strong></p><span className={`connection-badge${verified ? ' verified' : ''}`}>{storeState.activeStore === 'supabase' ? <><ShieldCheck size={15} />Supabaseを使用中</> : verified ? <><ShieldCheck size={15} />接続確認済み</> : <><Database size={15} />{isWeb ? '初期設定が必要' : 'SQLiteが既定'}</>}</span></header>
     <section className="settings-card"><div className="settings-card-heading"><h3>Data API</h3><p>保存するのはURLとPublishable Keyだけです。DBパスワード、Secret Key、Service Role Keyは受け付けません。</p></div>
       <form onSubmit={event => { event.preventDefault(); save(); }}>
         <Label>Supabase URL<Input id="supabase-url" type="url" placeholder="https://your-project.supabase.co" autoComplete="off" value={form.url} onChange={event => field('url', event.target.value)} /></Label>
@@ -257,7 +268,6 @@ function SupabaseSettings({ hidden }) {
         <div className="settings-actions"><Button type="submit" disabled={busy}>設定を保存</Button><Button type="button" variant="outline" disabled={busy || !form.url || !form.publishableKey} onClick={checkConnection}>読み取り接続を確認</Button></div>
       </form><p className="settings-status" role="status">{status}</p>
     </section>
-    {isWeb && diagnostics && <section className="settings-card" id="web-diagnostics"><div className="settings-card-heading"><h3>PWA接続診断</h3><p>Build {diagnostics.build} / 有効化状態: {diagnostics.runtimeActiveStore === 'supabase' ? 'Supabase' : '未設定'} / 端末トークン: {diagnostics.hasAccessToken ? '保存済み' : '未設定'} / RLS端末認証: {diagnostics.accessAuthorized === true ? '承認済み' : diagnostics.accessAuthorized === false ? '拒否' : '未確認'}</p></div>{diagnostics.verificationCounts && <div className="migration-counts">{Object.entries(diagnostics.verificationCounts).map(([key, count]) => <span key={key}>{countLabels[key]} <b>{count}</b></span>)}</div>}</section>}
     {!isWeb && <section className="settings-card migration-card"><div className="settings-card-heading"><h3>SQLiteからSupabaseへ移行</h3><p>明示実行した場合だけ、ローカルSQLiteを残したままSupabaseへコピーします。移行後も接続先は自動で切り替わりません。</p></div>
       <div className="migration-notice"><ShieldCheck size={18} /><div><strong>管理キーはアプリに入力しません</strong><p>Publishable Keyではテーブルを作成できないため、一度限りの安全なセットアップSQLをDashboardで実行します。通常テーブルはRLS有効・匿名アクセス不可です。</p></div></div>
       <Button type="button" variant="outline" disabled={busy || !verified} onClick={prepare}>セットアップSQLを生成</Button>
@@ -286,7 +296,8 @@ export default function App() {
   const [entryOpen, setEntryOpen] = useState(false), [editingEntry, setEditingEntry] = useState(null);
   const [selectedUnitId, setSelectedUnitId] = useState(null), [selectedDate, setSelectedDate] = useState(''), [selectedLogId, setSelectedLogId] = useState(null);
   const [reviewOpen, setReviewOpen] = useState(false), [reviewQueue, setReviewQueue] = useState([]);
-  const searchRef = useRef(null), searchTimer = useRef(null);
+  const [pullDistance, setPullDistance] = useState(0), [pullStatus, setPullStatus] = useState('idle');
+  const searchRef = useRef(null), searchTimer = useRef(null), pullStart = useRef(null), pullDistanceRef = useRef(0);
   const refreshAll = useCallback(async () => { try { const state = await api.getDataStoreStatus(); if (api.platform === 'web' && state.activeStore !== 'supabase') throw new Error(state.needsReauthorization ? '端末認証を再設定してください。保存済みのURLとPublishable Keyは維持されています。' : '設定画面でSupabaseを有効化するとデータが表示されます。'); const [nextWords, nextSentences, nextUnits, nextLogs] = await Promise.all([api.list('words', ''), api.list('sentences', ''), api.listCurriculum(), api.listStudyLogs()]); setWords(nextWords); setSentences(nextSentences); setUnits(nextUnits); setLogs(nextLogs); setLoadError(''); } catch (error) { setLoadError(error.message); } }, []);
   const refreshLibrary = useCallback(async (nextKind = kind, query = search) => { const next = await api.list(nextKind, query); setEntries(next); setLibraryStatus(`${next.length} 件`); }, [kind, search]);
   useEffect(() => { refreshAll(); }, [refreshAll]);
@@ -299,17 +310,22 @@ export default function App() {
   function openUnit(id) { setSelectedUnitId(Number(id)); setView('curriculum-detail'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   function openLog(id) { setSelectedDate(''); setSelectedLogId(Number(id)); setView('study-logs'); }
   function selectActivityDate(date) { setSelectedDate(date); setSelectedLogId(null); setView('study-logs'); }
+  function selectStudyLog(id) { setSelectedLogId(Number(id)); setTimeout(() => document.querySelector('#study-log-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0); }
   function updateLog(updated) { setLogs(previous => previous.map(log => log.id === updated.id ? updated : log)); }
+  function beginPull(event) { if (api.platform !== 'web' || window.innerWidth > 760 || window.scrollY > 0 || event.touches.length !== 1 || pullStatus === 'refreshing') return; pullStart.current = event.touches[0].clientY; pullDistanceRef.current = 0; setPullStatus('pulling'); }
+  function movePull(event) { if (pullStart.current == null || event.touches.length !== 1) return; const distance = Math.min(96, Math.max(0, (event.touches[0].clientY - pullStart.current) * .55)); pullDistanceRef.current = distance; setPullDistance(distance); }
+  async function finishPull() { if (pullStart.current == null) return; const shouldRefresh = pullDistanceRef.current >= 64; pullStart.current = null; pullDistanceRef.current = 0; if (!shouldRefresh) { setPullDistance(0); setPullStatus('idle'); return; } setPullDistance(52); setPullStatus('refreshing'); const tasks = [refreshAll()]; if (view === 'words' || view === 'sentences') tasks.push(refreshLibrary(kind, search)); await Promise.allSettled(tasks); setPullStatus('done'); setPullDistance(0); setTimeout(() => setPullStatus('idle'), 900); }
   const selectedUnit = units.find(unit => unit.id === selectedUnitId);
   const activeTab = view === 'curriculum-detail' ? 'curriculum' : view;
   return <>
-    <main className="app-shell"><header className="topbar"><div className="brand"><span className="brand-mark"><BookOpen size={18} /></span><div><strong>English Shelf</strong><small>LOCAL STUDY DESK</small></div></div><span className="local-badge"><Check size={13} />この端末に保存</span></header>
-      <nav className="tabs" aria-label="メインナビゲーション">{tabs.map(([id, label]) => <Button variant="ghost" className={`tab${activeTab === id ? ' active' : ''}`} data-kind={id} key={id} onClick={() => navigate(id)}>{label}</Button>)}</nav>
+    <div className={`pull-refresh ${pullStatus}`} style={{ '--pull-distance': `${pullDistance}px` }} role="status" aria-live="polite">{pullStatus === 'refreshing' ? '更新中…' : pullStatus === 'done' ? '更新しました' : pullDistance >= 64 ? '離して更新' : '引き下げて更新'}</div>
+    <main className="app-shell" onTouchStart={beginPull} onTouchMove={movePull} onTouchEnd={finishPull} onTouchCancel={finishPull}><header className="topbar"><div className="brand"><span className="brand-mark"><BookOpen size={18} /></span><div><strong>English Shelf</strong><small>LOCAL STUDY DESK</small></div></div><span className="local-badge"><Check size={13} />この端末に保存</span></header>
+      <nav className="tabs" aria-label="メインナビゲーション">{tabs.map(({ id, label, Icon }) => <Button variant="ghost" className={`tab${activeTab === id ? ' active' : ''}`} data-kind={id} key={id} aria-label={label} title={label} onClick={() => navigate(id)}><Icon className="tab-icon" size={19} aria-hidden="true" /><span className="tab-label">{label}</span></Button>)}</nav>
       <Summary hidden={view !== 'summary'} words={words} sentences={sentences} units={units} logs={logs} loadError={loadError} selectedDate={selectedDate} onSelectDate={selectActivityDate} onReview={startReview} />
       <Library hidden={view !== 'words' && view !== 'sentences'} kind={kind} entries={entries} search={search} onSearch={value => { setSearch(value); setLibraryStatus('検索中…'); }} status={libraryStatus} onAdd={() => { setEditingEntry(null); setEntryOpen(true); }} onEdit={editEntry} searchRef={searchRef} />
       <CurriculumList hidden={view !== 'curriculum'} units={units} onOpenUnit={openUnit} onOpenGrammar={id => editEntry(id, 'sentences')} />
       <CurriculumDetail hidden={view !== 'curriculum-detail'} unit={selectedUnit} onBack={() => setView('curriculum')} onOpenGrammar={id => editEntry(id, 'sentences')} onOpenLog={openLog} />
-      <StudyLogs hidden={view !== 'study-logs'} logs={logs} selectedDate={selectedDate} onDate={value => { setSelectedDate(value); setSelectedLogId(null); }} selectedId={selectedLogId} onSelect={setSelectedLogId} onOpenUnit={openUnit} onUpdateNote={updateLog} />
+      <StudyLogs hidden={view !== 'study-logs'} logs={logs} selectedDate={selectedDate} onDate={value => { setSelectedDate(value); setSelectedLogId(null); }} selectedId={selectedLogId} onSelect={selectStudyLog} onOpenUnit={openUnit} onUpdateNote={updateLog} />
       <SupabaseSettings hidden={view !== 'settings'} />
     </main>
     <EntryDialog open={entryOpen} onOpenChange={setEntryOpen} kind={kind} entry={editingEntry} onSaved={async () => { await Promise.all([refreshLibrary(), refreshAll()]); setLibraryStatus('保存しました。'); }} />

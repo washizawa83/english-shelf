@@ -61,6 +61,19 @@ test('word cards and forms expose every Notion word property', () => {
   assert.match(app, /Notionの「変形」にそのまま保存されます/);
   assert.match(app, /<b>最終復習日<\/b>/);
   assert.match(app, /忘却 Lv\./);
+  assert.match(app, /data-toggle-meaning/);
+  assert.match(app, /data-edit-entry/);
+  assert.match(app, /useState\(false\)/);
+});
+
+test('mobile navigation uses icons and pull-to-refresh is connected', () => {
+  assert.match(app, /label: '英文', Icon: BookText/);
+  assert.match(app, /className="tab-icon"/);
+  assert.match(app, /className="tab-label"/);
+  assert.match(app, /className=\{`pull-refresh/);
+  assert.match(app, /onTouchStart=\{beginPull\}/);
+  assert.match(app, /onTouchMove=\{movePull\}/);
+  assert.match(app, /onTouchEnd=\{finishPull\}/);
 });
 
 test('tabs use only a bottom active indicator', () => {
@@ -87,6 +100,8 @@ test('study log content is read-only while the learner memo remains editable', (
   assert.match(app, /updateStudyLogNote/);
   assert.match(app, /data-related-unit-id/);
   assert.doesNotMatch(app, /log\.mastery_note|理解度メモ/);
+  assert.match(app, /log\.id === Number\(selectedId\)/);
+  assert.match(app, /onClick=\{\(\) => onSelect\(log\.id\)\}/);
 });
 
 test('Ctrl+F integration remains connected to the renderer', () => {
