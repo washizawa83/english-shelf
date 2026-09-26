@@ -246,6 +246,7 @@ function SupabaseSettings({ hidden }) {
     catch (error) { setStatus(error.message); } finally { setBusy(false); }
   }
   const countLabels = { words: '単語', sentences: '英文・文法', curriculum_units: 'カリキュラム', curriculum_unit_grammar_items: '関連付け', study_logs: '学習記録' };
+  const diagnostics = storeState.diagnostics;
   return <section className="settings-view" id="settings-view" hidden={hidden}>
     <header className="settings-heading"><div><p className="eyebrow">DATA CONNECTION</p><h2>Supabase接続設定</h2><p>現在の読み書き先: <strong>{storeState.activeStore === 'supabase' ? 'Supabase' : isWeb ? '未設定' : 'ローカルSQLite'}</strong></p></div><span className={`connection-badge${verified ? ' verified' : ''}`}>{storeState.activeStore === 'supabase' ? <><ShieldCheck size={15} />Supabaseを使用中</> : verified ? <><ShieldCheck size={15} />接続確認済み</> : <><Database size={15} />{isWeb ? '初期設定が必要' : 'SQLiteが既定'}</>}</span></header>
     <section className="settings-card"><div className="settings-card-heading"><h3>Data API</h3><p>保存するのはURLとPublishable Keyだけです。DBパスワード、Secret Key、Service Role Keyは受け付けません。</p></div>
@@ -255,6 +256,7 @@ function SupabaseSettings({ hidden }) {
         <div className="settings-actions"><Button type="submit" disabled={busy}>設定を保存</Button><Button type="button" variant="outline" disabled={busy || !form.url || !form.publishableKey} onClick={checkConnection}>読み取り接続を確認</Button></div>
       </form><p className="settings-status" role="status">{status}</p>
     </section>
+    {isWeb && diagnostics && <section className="settings-card" id="web-diagnostics"><div className="settings-card-heading"><h3>PWA接続診断</h3><p>Build {diagnostics.build} / 有効化状態: {diagnostics.runtimeActiveStore === 'supabase' ? 'Supabase' : '未設定'} / 端末トークン: {diagnostics.hasAccessToken ? '保存済み' : '未設定'} / RLS端末認証: {diagnostics.accessAuthorized === true ? '承認済み' : diagnostics.accessAuthorized === false ? '拒否' : '未確認'}</p></div>{diagnostics.verificationCounts && <div className="migration-counts">{Object.entries(diagnostics.verificationCounts).map(([key, count]) => <span key={key}>{countLabels[key]} <b>{count}</b></span>)}</div>}</section>}
     {!isWeb && <section className="settings-card migration-card"><div className="settings-card-heading"><h3>SQLiteからSupabaseへ移行</h3><p>明示実行した場合だけ、ローカルSQLiteを残したままSupabaseへコピーします。移行後も接続先は自動で切り替わりません。</p></div>
       <div className="migration-notice"><ShieldCheck size={18} /><div><strong>管理キーはアプリに入力しません</strong><p>Publishable Keyではテーブルを作成できないため、一度限りの安全なセットアップSQLをDashboardで実行します。通常テーブルはRLS有効・匿名アクセス不可です。</p></div></div>
       <Button type="button" variant="outline" disabled={busy || !verified} onClick={prepare}>セットアップSQLを生成</Button>

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function loadWebApi({ settings, runtime, rows = {} }) {
+function loadWebApi({ settings, runtime, rows = {}, deviceAccess = true }) {
   const root = path.join(__dirname, '..');
   const storage = new Map([
     ['english-shelf:supabase-settings', JSON.stringify(settings)],
@@ -19,6 +19,7 @@ function loadWebApi({ settings, runtime, rows = {} }) {
     localStorage: { getItem: key => storage.get(key) || null, setItem: (key, value) => storage.set(key, value) },
     fetch: async (url, options = {}) => {
       requests.push({ url, options });
+      if (new URL(url).pathname.endsWith('/rpc/english_shelf_has_access')) return { ok: true, status: 200, text: async () => JSON.stringify(deviceAccess) };
       const table = new URL(url).pathname.split('/').pop();
       return { ok: true, status: 200, text: async () => JSON.stringify(rows[table] || []) };
     },
@@ -70,9 +71,13 @@ test('web bridge preserves an existing iPhone authorization and loads every summ
   assert.equal(api.initialView, 'summary');
   await api.saveSupabaseSettings({ ...settings, url: `${settings.url}/` });
   assert.deepEqual(JSON.parse(storage.get('english-shelf:supabase-runtime')), { activeStore: 'supabase', accessToken: 'existing-device-token', verification });
+  const status = await api.getDataStoreStatus();
+  assert.equal(status.activeStore, 'supabase');
+  assert.equal(status.diagnostics.accessAuthorized, true);
   const [words, sentences, units, logs] = await Promise.all([api.list('words', ''), api.list('sentences', ''), api.listCurriculum(), api.listStudyLogs()]);
   assert.deepEqual([words.length, sentences.length, units.length, logs.length], [31, 8, 28, 2]);
   assert.ok(requests.every(request => request.options.headers['x-english-shelf-access-token'] === 'existing-device-token'));
+  assert.ok(requests.some(request => request.url.endsWith('/rpc/english_shelf_has_access')));
   assert.ok(requests.some(request => request.url.includes('english_shelf_curriculum_unit_grammar_items?select=*&order=unit_id.asc,grammar_item_id.asc')));
 });
 
@@ -86,6 +91,10 @@ test('web bridge does not show a broken active state as an empty summary', async
   assert.equal(status.migrationVerified, true);
   assert.equal(status.needsReauthorization, true);
 
-  const inaccessible = loadWebApi({ settings, runtime: { activeStore: 'supabase', accessToken: 'stale-token', verification } });
-  await assert.rejects(() => inaccessible.api.verifySupabaseData(), /以前確認したSupabaseデータを取得できません/);
+  const inaccessible = loadWebApi({ settings, runtime: { activeStore: 'supabase', accessToken: 'stale-token', verification }, deviceAccess: false });
+  const inaccessibleStatus = await inaccessible.api.getDataStoreStatus();
+  assert.equal(inaccessibleStatus.activeStore, 'setup');
+  assert.equal(inaccessibleStatus.needsReauthorization, true);
+  assert.equal(inaccessibleStatus.diagnostics.accessAuthorized, false);
+  await assert.rejects(() => inaccessible.api.verifySupabaseData(), /RLSで承認されていません/);
 });

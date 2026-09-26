@@ -27,6 +27,7 @@ app.whenReady().then(async () => {
       onlyPublicFields: settings?.querySelectorAll('#supabase-url, #supabase-publishable-key').length === 2,
       desktopMigrationHidden: !settings?.innerText.includes('SQLiteからSupabaseへ移行'),
       webSetupVisible: settings?.innerText.includes('SupabaseをWeb版で使用する'),
+      diagnosticsVisible: settings?.querySelector('#web-diagnostics')?.innerText.includes('Build 2026.09.26.4'),
       activationDisabled: settings ? [...settings.querySelectorAll('button')].find(button => button.textContent === 'Supabaseを使用する')?.disabled === true : false,
       mobileViewportFits: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
       manifestLinked: Boolean(document.querySelector('link[rel="manifest"]')),
