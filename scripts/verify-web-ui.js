@@ -31,6 +31,8 @@ app.whenReady().then(async () => {
     await new Promise(resolve => setTimeout(resolve, 80));
     const dateControl = document.querySelector('.date-input-control');
     const dateInput = document.querySelector('#study-log-date-filter');
+    const initialDatePlaceholderVisible = document.querySelector('.date-input-placeholder')?.innerText === '日付を選択'
+      && dateInput?.value === '';
     const dateRect = dateControl?.getBoundingClientRect();
     const dateInputRect = dateInput?.getBoundingClientRect();
     const setDateValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
@@ -40,6 +42,9 @@ app.whenReady().then(async () => {
     await new Promise(resolve => setTimeout(resolve, 80));
     const dateClear = document.querySelector('#clear-study-log-date');
     const dateClearRect = dateClear?.getBoundingClientRect();
+    const selectedDatePresentation = dateInput.value === '2026-09-26'
+      && !document.querySelector('.date-input-placeholder')
+      && !dateClear.hidden;
     const viewportWidth = document.documentElement.clientWidth;
     const dateFitsViewport = Boolean(dateRect && dateInputRect && dateClearRect
       && dateRect.left >= 0 && dateRect.right <= viewportWidth
@@ -47,6 +52,11 @@ app.whenReady().then(async () => {
       && dateClearRect.left >= 0 && dateClearRect.right <= viewportWidth
       && dateControl.scrollWidth <= dateControl.clientWidth
       && !dateClear.hidden);
+    dateClear.click();
+    await new Promise(resolve => setTimeout(resolve, 80));
+    const clearedDatePresentation = dateInput.value === ''
+      && document.querySelector('.date-input-placeholder')?.innerText === '日付を選択'
+      && document.querySelector('#clear-study-log-date')?.hidden;
     document.querySelector('[data-kind="settings"]')?.click();
     await new Promise(resolve => setTimeout(resolve, 30));
     return {
@@ -65,6 +75,9 @@ app.whenReady().then(async () => {
         && activityGrid.scrollWidth <= activityPanel.clientWidth
         && activityGrid.getBoundingClientRect().right <= document.documentElement.clientWidth,
       dateControlFitsViewport: dateFitsViewport,
+      initialDatePlaceholderVisible,
+      selectedDatePresentation,
+      clearedDatePresentation,
       pullRefreshAvailable: Boolean(document.querySelector('.pull-refresh')),
       manifestLinked: Boolean(document.querySelector('link[rel="manifest"]')),
       touchIconLinked: Boolean(document.querySelector('link[rel="apple-touch-icon"]')),

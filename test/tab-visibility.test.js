@@ -107,6 +107,8 @@ test('curriculum remains read-only and keeps all seven sections', () => {
 
 test('study log content is read-only while the learner memo remains editable', () => {
   assert.match(app, /id="study-log-date-filter"/);
+  assert.match(app, /date-input-placeholder/);
+  assert.match(app, />日付を選択<\/span>/);
   assert.match(app, /id="clear-study-log-date"/);
   assert.match(app, /id="study-log-user-note"/);
   assert.match(app, /data-save-study-log-note/);

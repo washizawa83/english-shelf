@@ -48,8 +48,11 @@ select { border:1px solid #cfd8d0; background:#fbfcfa; border-radius:8px; paddin
 .study-log-heading { align-items:end; }
 .study-log-heading > .status { align-self:center; }
 .study-log-heading .status { display:block; margin:6px 0 0; }
-.date-input-control { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:7px; align-items:center; width:100%; }
+.date-input-control { position:relative; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:7px; align-items:center; width:100%; }
 .date-input-control input { display:block; width:100%; min-width:0; max-width:100%; inline-size:100%; min-inline-size:0; max-inline-size:100%; }
+.date-input-control.empty input { color:transparent; }
+.date-input-control.empty input::-webkit-datetime-edit { color:transparent; }
+.date-input-placeholder { position:absolute; z-index:1; top:50%; left:12px; right:46px; overflow:hidden; translate:0 -50%; color:var(--muted); font-size:13px; font-weight:400; text-overflow:ellipsis; white-space:nowrap; pointer-events:none; }
 .date-clear-inside.ui-button { position:static; display:grid; place-items:center; width:42px; height:42px; min-height:42px; padding:0; border:0; border-radius:8px; background:#e8ece7; color:#53645d; font-size:18px; line-height:1; cursor:pointer; touch-action:manipulation; }
 .date-clear-inside:hover { background:var(--sage); color:var(--accent); }
 .date-clear-inside[hidden] { display:none; }
