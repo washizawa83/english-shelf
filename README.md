@@ -1,5 +1,7 @@
 # English Shelf
 
+GitHub repository: `english-shelf`
+
 Electron + Reactで動くローカル英語学習アプリです。既定では既存のSQLiteデータをそのまま使用します。
 
 ## データストア構成
