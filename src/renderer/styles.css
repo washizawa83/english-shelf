@@ -85,9 +85,10 @@ button.activity-day:hover { outline:2px solid #7aa892; outline-offset:1px; }
 .bar-column { height:100%; display:flex; flex-direction:column; justify-content:end; align-items:center; gap:4px; color:var(--muted); font:500 10px "DM Mono",monospace; }
 .distribution-bar { display:block; width:20px; min-height:0; border-radius:5px 5px 2px 2px; }
 .study-log-list { display:grid; gap:9px; }
-.study-log-card { display:grid; gap:5px; text-align:left; padding:14px 15px; border:1px solid var(--line); border-radius:10px; background:white; color:var(--ink); cursor:pointer; }
+.study-log-card.ui-button { display:grid; justify-content:stretch; justify-items:start; align-items:start; gap:6px; width:100%; min-height:0; padding:15px 16px; text-align:left; border:1px solid var(--line); border-radius:10px; background:white; color:var(--ink); cursor:pointer; }
+.study-log-card strong { width:100%; font-size:15px; line-height:1.5; text-align:left; }
 .study-log-card:hover,.study-log-card:focus-visible { border-color:var(--accent); background:#f8fbf8; outline:none; }
-.study-log-card time,.study-log-card span { color:var(--muted); font-size:12px; }
+.study-log-card time,.study-log-card span { width:100%; color:var(--muted); font-size:12px; line-height:1.45; text-align:left; }
 .study-log-detail h2 { margin-bottom:22px; }
 .study-log-detail section { padding:18px 0; border-top:1px solid var(--line); }
 .study-log-detail section h3,.unit-study-logs h4 { margin:0 0 9px; }

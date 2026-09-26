@@ -173,7 +173,11 @@ app.whenReady().then(async () => {
       const dateInputBesideHeading = Boolean(studyLogView.querySelector('.study-log-heading #study-log-date-filter'));
       const listRestoredByBack = Boolean(studyLogView.querySelector('#study-log-list'))
         && !studyLogView.querySelector('#study-log-detail');
-      studyLogView.querySelector('[data-study-log-id]')?.click();
+      const firstStudyLogCard = studyLogView.querySelector('[data-study-log-id]');
+      const studyLogCardLeftAligned = getComputedStyle(firstStudyLogCard).textAlign === 'left'
+        && getComputedStyle(firstStudyLogCard).justifyItems === 'start'
+        && [...firstStudyLogCard.children].every(child => getComputedStyle(child).textAlign === 'left');
+      firstStudyLogCard?.click();
       await new Promise(resolve => setTimeout(resolve, 80));
       const listItemOpensDetail = Boolean(studyLogView.querySelector('#study-log-detail'))
         && !studyLogView.querySelector('#study-log-list');
@@ -249,6 +253,7 @@ app.whenReady().then(async () => {
         studyLogDetailVisible,
         detailReplacesList,
         listRestoredByBack,
+        studyLogCardLeftAligned,
         listItemOpensDetail,
         userNoteEditable,
         masteryNoteHidden,
@@ -324,6 +329,7 @@ app.whenReady().then(async () => {
     && result.studyLogDetailVisible
     && result.detailReplacesList
     && result.listRestoredByBack
+    && result.studyLogCardLeftAligned
     && result.listItemOpensDetail
     && result.userNoteEditable
     && result.masteryNoteHidden
