@@ -24,7 +24,6 @@ function createWindow() {
     height: 760,
     minWidth: 860,
     minHeight: 620,
-    icon: path.join(__dirname, '..', 'public', 'icons', 'icon-512.png'),
     autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
   });

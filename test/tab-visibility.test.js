@@ -134,11 +134,10 @@ test('every date input uses the shared empty-state guidance', () => {
   assert.match(app, /date-input-shell/);
 });
 
-test('header storage badge follows the active data store without exposing settings', () => {
-  assert.match(app, /data-active-store=\{storeState\.activeStore\}/);
-  assert.match(app, /label: 'Supabaseに保存'/);
-  assert.match(app, /label: 'この端末に保存'/);
-  assert.doesNotMatch(app, /local-badge[^\n]+publishableKey/);
+test('storage status appears only in settings, not in a global header', () => {
+  assert.doesNotMatch(app, /className="topbar"|local-badge|data-active-store/);
+  assert.match(app, /現在の読み書き先:/);
+  assert.match(app, /className=\{`connection-badge/);
 });
 
 test('library level filter combines with search without mutating entries', () => {

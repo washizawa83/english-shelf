@@ -73,16 +73,8 @@ app.whenReady().then(async () => {
       };
       const summary = document.querySelector('#summary-view');
       recordPage(summary);
-      const storageBadge = document.querySelector('.local-badge');
-      const topbar = document.querySelector('.topbar');
-      const headerIcon = topbar?.querySelector('.brand-mark img');
-      const compactIconOnlyHeader = Boolean(headerIcon?.complete && headerIcon.naturalWidth === 192)
-        && !topbar.querySelector('.brand')
-        && !topbar.innerText.includes('English Shelf')
-        && !topbar.innerText.includes('LOCAL STUDY DESK');
-      const sqliteStorageBadgeAccurate = storageBadge?.dataset.activeStore === 'sqlite'
-        && storageBadge.innerText.includes('この端末に保存')
-        && fitsViewport(storageBadge);
+      const globalHeaderRemoved = !document.querySelector('.topbar, .local-badge')
+        && !document.body.innerText.includes('この端末に保存');
       const summaryInitial = !summary.hidden
         && document.querySelector('.tab.active')?.dataset.kind === 'summary'
         && document.querySelector('#summary-word-count')?.textContent === '31'
@@ -383,8 +375,7 @@ app.whenReady().then(async () => {
         || settingsView.innerText.includes('接続確認と移行データ照合が完了するまで切替できません');
       return {
         summaryInitial,
-        sqliteStorageBadgeAccurate,
-        compactIconOnlyHeader,
+        globalHeaderRemoved,
         curriculumProgressSummary,
         distributionComplete,
         distributionFitsMobile,
@@ -484,8 +475,7 @@ app.whenReady().then(async () => {
   console.log(JSON.stringify(result));
   const passed = result.libraryHidden
     && result.summaryInitial
-    && result.sqliteStorageBadgeAccurate
-    && result.compactIconOnlyHeader
+    && result.globalHeaderRemoved
     && result.distributionFitsMobile
     && result.searchHasNoIcon
     && result.wordTabUsesVocabularyIcon

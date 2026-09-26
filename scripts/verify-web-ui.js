@@ -28,17 +28,8 @@ app.whenReady().then(async () => {
     const recordPage = element => { const rect = element?.getBoundingClientRect(); if (rect?.width) pageRects.push({ left: rect.left, right: rect.right, width: rect.width }); };
     const tabIcons = [...document.querySelectorAll('.tab-icon')];
     const tabLabels = [...document.querySelectorAll('.tab-label')];
-    const storageBadge = document.querySelector('.local-badge');
-    const topbar = document.querySelector('.topbar');
-    const headerIcon = topbar?.querySelector('.brand-mark img');
-    const compactIconOnlyHeader = Boolean(headerIcon?.complete && headerIcon.naturalWidth === 192)
-      && !topbar.querySelector('.brand')
-      && !topbar.innerText.includes('English Shelf')
-      && !topbar.innerText.includes('LOCAL STUDY DESK');
-    const supabaseStorageBadgeAccurate = storageBadge?.dataset.activeStore === 'supabase'
-      && storageBadge.innerText.includes('Supabaseに保存')
-      && !/https?:|publishable|key/i.test(storageBadge.innerText)
-      && storageBadge.getBoundingClientRect().right <= document.documentElement.clientWidth;
+    const globalHeaderRemoved = !document.querySelector('.topbar, .local-badge')
+      && !document.body.innerText.includes('Supabaseに保存');
     const setDateValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
     const verifyDateInput = async input => {
       if (!input) return false;
@@ -167,8 +158,7 @@ app.whenReady().then(async () => {
       diagnosticsRemoved: !settings?.querySelector('#web-diagnostics') && !settings?.innerText.includes('PWA接続診断'),
       activeSupabaseStateVisible: settings?.innerText.includes('Supabaseを使用中')
         && ![...settings.querySelectorAll('button')].some(button => button.textContent === 'Supabaseを使用する'),
-      supabaseStorageBadgeAccurate,
-      compactIconOnlyHeader,
+      globalHeaderRemoved,
       mobileViewportFits: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
       mobileTabsUseIcons: tabIcons.length === 6
         && tabIcons.every(icon => getComputedStyle(icon).display !== 'none')
@@ -200,7 +190,7 @@ app.whenReady().then(async () => {
       bodyText: document.body.innerText.slice(0, 200)
     };
   })()`);
-  result.pwaFiles = ['manifest.webmanifest', 'service-worker.js', 'icons/favicon-32.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'].every(file => fs.existsSync(path.join(root, file)));
+  result.pwaFiles = ['manifest.webmanifest', 'service-worker.js', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'].every(file => fs.existsSync(path.join(root, file)));
   console.log(JSON.stringify(result));
   const passed = Object.entries(result).filter(([key]) => key !== 'bodyText').every(([, value]) => Boolean(value));
   window.destroy(); server.close(); app.exit(passed ? 0 : 1);
