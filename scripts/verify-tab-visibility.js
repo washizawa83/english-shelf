@@ -39,13 +39,43 @@ app.whenReady().then(async () => {
   await window.loadFile(path.join(__dirname, '..', 'dist', 'renderer', 'index.html'));
   const result = await window.webContents.executeJavaScript(`
     (async () => {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 400));
       const viewportWidth = window.innerWidth;
       const fitsViewport = element => { const rect = element?.getBoundingClientRect(); return Boolean(rect && rect.left >= 0 && rect.right <= viewportWidth); };
+      const pageRects = [];
+      const recordPage = element => { const rect = element?.getBoundingClientRect(); if (rect?.width) pageRects.push({ left: rect.left, right: rect.right, width: rect.width }); };
       const formFitsDialog = dialog => Boolean(dialog && fitsViewport(dialog)
         && dialog.scrollWidth <= dialog.clientWidth
         && [...dialog.querySelectorAll('input, textarea, button, [role="combobox"]')].every(fitsViewport));
+      const setDateValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      const verifyDateInput = async input => {
+        if (!input) return false;
+        const update = async value => {
+          setDateValue.call(input, value);
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+          await new Promise(resolve => setTimeout(resolve, 40));
+        };
+        await update('');
+        const shell = input.closest('.date-input-shell');
+        const emptyState = shell?.classList.contains('empty')
+          && shell.querySelector('.date-input-placeholder')?.textContent === '日付を選択';
+        await update('2026-09-26');
+        const selectedState = input.value === '2026-09-26'
+          && !shell.classList.contains('empty')
+          && !shell.querySelector('.date-input-placeholder');
+        await update('');
+        const clearedState = input.value === ''
+          && shell.classList.contains('empty')
+          && shell.querySelector('.date-input-placeholder')?.textContent === '日付を選択';
+        return emptyState && selectedState && clearedState && fitsViewport(shell) && fitsViewport(input);
+      };
       const summary = document.querySelector('#summary-view');
+      recordPage(summary);
+      const storageBadge = document.querySelector('.local-badge');
+      const sqliteStorageBadgeAccurate = storageBadge?.dataset.activeStore === 'sqlite'
+        && storageBadge.innerText.includes('この端末に保存')
+        && fitsViewport(storageBadge);
       const summaryInitial = !summary.hidden
         && document.querySelector('.tab.active')?.dataset.kind === 'summary'
         && document.querySelector('#summary-word-count')?.textContent === '31'
@@ -90,6 +120,7 @@ app.whenReady().then(async () => {
         && !document.querySelector('.activity-day.selected');
       document.querySelector('[data-kind="words"]').click();
       await new Promise(resolve => setTimeout(resolve, 300));
+      recordPage(document.querySelector('#library-workspace'));
       const libraryUsesFullWidth = !document.querySelector('#library-workspace > .entry-panel')
         && Boolean(document.querySelector('#library-workspace > .library-list-panel'));
       const libraryTools = document.querySelector('.library-tools');
@@ -98,7 +129,11 @@ app.whenReady().then(async () => {
       const addButtonRect = document.querySelector('#add-entry')?.getBoundingClientRect();
       const libraryHeaderUsesFullWidth = Math.abs(searchRect.left - libraryToolsRect.left) < 0.5
         && Math.abs(addButtonRect.right - libraryToolsRect.right) < 0.5
-        && Math.abs((addButtonRect.left - searchRect.right) - 18) < 0.5;
+        && libraryTools.scrollWidth <= libraryTools.clientWidth;
+      const wordLevelFilter = document.querySelector('#forgetting-level-filter');
+      const levelFilterHasAllOptions = wordLevelFilter?.options.length === 9
+        && wordLevelFilter.options[0].textContent === 'すべて'
+        && fitsViewport(wordLevelFilter);
       const addButtonVisible = document.querySelector('#add-entry')?.textContent === '単語を追加';
       const firstWordCard = document.querySelector('.word-entry-card');
       const wordCardComplete = Boolean(firstWordCard?.querySelector('.inflection-chip'))
@@ -136,12 +171,32 @@ app.whenReady().then(async () => {
         && getComputedStyle(wordMeaningField?.querySelector('.meaning-mask')).visibility === 'hidden'
         && wordMeaningField?.querySelector('[data-toggle-meaning]')?.getAttribute('aria-expanded') === 'true';
       const wordHeightStableOnMeaningToggle = Math.abs(firstWordCard.getBoundingClientRect().height - wordHeightBeforeMeaningToggle) < 0.5;
+      const wordTargetLevel = firstWordCard?.querySelector('.level-badge')?.textContent.match(/\d+/)?.[0] || '1';
+      wordLevelFilter.value = wordTargetLevel;
+      wordLevelFilter.dispatchEvent(new Event('change', { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 50));
+      const wordLevelFilterWorks = [...document.querySelectorAll('.word-entry-card')].length > 0
+        && [...document.querySelectorAll('.word-entry-card .level-badge')].every(badge => badge.textContent.includes('Lv.' + wordTargetLevel));
+      const searchInput = document.querySelector('#search');
+      const setTextValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      const wordSearchTerm = document.querySelector('.word-entry-card strong')?.textContent || '';
+      setTextValue.call(searchInput, wordSearchTerm);
+      searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+      searchInput.dispatchEvent(new Event('change', { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 260));
+      const wordSearchAndLevelCombine = document.querySelectorAll('.word-entry-card').length >= 1
+        && [...document.querySelectorAll('.word-entry-card .level-badge')].every(badge => badge.textContent.includes('Lv.' + wordTargetLevel));
+      setTextValue.call(searchInput, '');
+      searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+      searchInput.dispatchEvent(new Event('change', { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 260));
       document.querySelector('#add-entry')?.click();
       await new Promise(resolve => setTimeout(resolve, 80));
       const addDialog = document.querySelector('#entry-dialog');
       const addModalOpen = addDialog?.dataset.state === 'open';
       const wordAddModalFitsMobile = formFitsDialog(addDialog)
         && fitsViewport(addDialog?.querySelector('[name="last_reviewed_at"]'));
+      const wordAddDateConsistent = await verifyDateInput(addDialog?.querySelector('[name="last_reviewed_at"]'));
       const addForgettingLevelHidden = !addDialog?.querySelector('[name="forgetting_level"]');
       const addLevelOneExplanation = addDialog?.querySelector('.default-level-note')?.innerText.includes('レベル 1')
         && addDialog?.querySelector('.default-level-note')?.innerText.includes('自動更新');
@@ -156,9 +211,11 @@ app.whenReady().then(async () => {
       const editDialog = document.querySelector('#entry-dialog');
       const editModalOpen = editDialog?.dataset.state === 'open';
       const editKeepsForgettingLevel = Boolean(editDialog?.querySelector('[name="forgetting_level"]'));
+      const wordEditDateConsistent = await verifyDateInput(editDialog?.querySelector('[name="last_reviewed_at"]'));
       editDialog?.querySelector('.dialog-close')?.click();
       document.querySelector('[data-kind="sentences"]')?.click();
       await new Promise(resolve => setTimeout(resolve, 250));
+      recordPage(document.querySelector('#library-workspace'));
       const firstSentenceCard = document.querySelector('.sentence-entry-card');
       const sentenceMeaningField = firstSentenceCard?.querySelector('.meaning-field');
       const sentenceHeightBeforeMeaningToggle = firstSentenceCard?.getBoundingClientRect().height;
@@ -173,6 +230,19 @@ app.whenReady().then(async () => {
       const sentenceMeaningCanToggle = getComputedStyle(sentenceMeaningField?.querySelector('.meaning-text')).visibility === 'visible'
         && sentenceMeaningField?.querySelector('[data-toggle-meaning]')?.getAttribute('aria-expanded') === 'true';
       const sentenceHeightStableOnMeaningToggle = Math.abs(firstSentenceCard.getBoundingClientRect().height - sentenceHeightBeforeMeaningToggle) < 0.5;
+      const sentenceLevelFilter = document.querySelector('#forgetting-level-filter');
+      const sentenceTargetLevel = firstSentenceCard?.querySelector('.level-badge')?.textContent.match(/\d+/)?.[0] || '1';
+      sentenceLevelFilter.value = sentenceTargetLevel;
+      sentenceLevelFilter.dispatchEvent(new Event('change', { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 50));
+      const sentenceLevelFilterWorks = [...document.querySelectorAll('.sentence-entry-card')].length > 0
+        && [...document.querySelectorAll('.sentence-entry-card .level-badge')].every(badge => badge.textContent.includes('Lv.' + sentenceTargetLevel));
+      document.querySelector('[data-kind="words"]')?.click();
+      await new Promise(resolve => setTimeout(resolve, 260));
+      const wordLevelFilterPersists = document.querySelector('#forgetting-level-filter')?.value === wordTargetLevel;
+      document.querySelector('[data-kind="sentences"]')?.click();
+      await new Promise(resolve => setTimeout(resolve, 260));
+      const sentenceLevelFilterPersists = document.querySelector('#forgetting-level-filter')?.value === sentenceTargetLevel;
       const sentenceFooter = firstSentenceCard?.querySelector('.entry-card-footer');
       const sentenceDate = sentenceFooter?.querySelector('.entry-review-date');
       const sentenceEdit = sentenceFooter?.querySelector('[data-edit-entry]');
@@ -188,10 +258,19 @@ app.whenReady().then(async () => {
       const sentenceAddModalFitsMobile = sentenceAddDialog?.dataset.state === 'open'
         && formFitsDialog(sentenceAddDialog)
         && fitsViewport(sentenceAddDialog?.querySelector('[name="last_reviewed_at"]'));
+      const sentenceAddDateConsistent = await verifyDateInput(sentenceAddDialog?.querySelector('[name="last_reviewed_at"]'));
       sentenceAddDialog?.querySelector('.dialog-close')?.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+      document.querySelector('.sentence-entry-card [data-edit-entry]')?.click();
+      await new Promise(resolve => setTimeout(resolve, 80));
+      const sentenceEditDialog = document.querySelector('#entry-dialog');
+      const sentenceEditDateConsistent = sentenceEditDialog?.dataset.state === 'open'
+        && await verifyDateInput(sentenceEditDialog.querySelector('[name="last_reviewed_at"]'));
+      sentenceEditDialog?.querySelector('.dialog-close')?.click();
       await new Promise(resolve => setTimeout(resolve, 50));
       document.querySelector('[data-kind="curriculum"]').click();
       await new Promise(resolve => setTimeout(resolve, 100));
+      recordPage(document.querySelector('#curriculum-view'));
       const library = document.querySelector('#library-workspace');
       const curriculum = document.querySelector('#curriculum-view');
       const addUiVisible = document.body.innerText.includes('単元を追加');
@@ -225,6 +304,7 @@ app.whenReady().then(async () => {
       await new Promise(resolve => setTimeout(resolve, 100));
       const studyLogView = document.querySelector('#study-log-view');
       const studyLogVisible = !studyLogView.hidden && getComputedStyle(studyLogView).display !== 'none';
+      recordPage(studyLogView);
       const activityRemovedFromStudyLogs = !studyLogView.querySelector('#study-activity-grid');
       const studyLogDetailVisible = document.querySelector('#study-log-detail')?.innerText.includes('場所と時の語順')
         && document.querySelector('#study-log-detail')?.innerText.includes('学習したこと');
@@ -240,6 +320,14 @@ app.whenReady().then(async () => {
       studyLogView.querySelector('#back-to-study-logs')?.click();
       await new Promise(resolve => setTimeout(resolve, 80));
       const dateInputBesideHeading = Boolean(studyLogView.querySelector('.study-log-heading #study-log-date-filter'));
+      const dateFilter = studyLogView.querySelector('.date-filter');
+      const dateFilterStyle = getComputedStyle(dateFilter);
+      const dateFilterUnframed = dateFilter?.querySelector('.date-filter-label')?.textContent === '日付指定'
+        && !dateFilter.querySelector('.ui-label')
+        && parseFloat(dateFilterStyle.borderTopWidth) === 0
+        && dateFilterStyle.backgroundColor === 'rgba(0, 0, 0, 0)'
+        && fitsViewport(dateFilter);
+      const studyLogDateConsistent = await verifyDateInput(studyLogView.querySelector('#study-log-date-filter'));
       const listRestoredByBack = Boolean(studyLogView.querySelector('#study-log-list'))
         && !studyLogView.querySelector('#study-log-detail');
       const firstStudyLogCard = studyLogView.querySelector('[data-study-log-id]');
@@ -259,6 +347,11 @@ app.whenReady().then(async () => {
       await new Promise(resolve => setTimeout(resolve, 80));
       const settingsView = document.querySelector('#settings-view');
       const settingsVisible = !settingsView.hidden && getComputedStyle(settingsView).display !== 'none';
+      recordPage(settingsView);
+      const pageContainersConsistent = pageRects.length === 6
+        && pageRects.every(rect => rect.left >= 0 && rect.right <= viewportWidth)
+        && Math.max(...pageRects.map(rect => rect.width)) - Math.min(...pageRects.map(rect => rect.width)) < 1
+        && Math.max(...pageRects.map(rect => rect.left)) - Math.min(...pageRects.map(rect => rect.left)) < 1;
       const settingsFieldsSafe = settingsView.querySelectorAll('input').length === 2
         && Boolean(settingsView.querySelector('#supabase-url'))
         && settingsView.querySelector('#supabase-publishable-key')?.type === 'password'
@@ -273,12 +366,14 @@ app.whenReady().then(async () => {
         || settingsView.innerText.includes('接続確認と移行データ照合が完了するまで切替できません');
       return {
         summaryInitial,
+        sqliteStorageBadgeAccurate,
         curriculumProgressSummary,
         distributionComplete,
         reviewOnlyOnSummary,
         largeHeaderAbsent,
         libraryUsesFullWidth,
         libraryHeaderUsesFullWidth,
+        levelFilterHasAllOptions,
         addButtonVisible,
         wordCardComplete,
         editUsesAccessibleIconButton,
@@ -288,20 +383,29 @@ app.whenReady().then(async () => {
         wordDetailSpacingCompact,
         wordMeaningCanToggle,
         wordHeightStableOnMeaningToggle,
+        wordLevelFilterWorks,
+        wordSearchAndLevelCombine,
         addModalOpen,
         wordAddModalFitsMobile,
+        wordAddDateConsistent,
         addForgettingLevelHidden,
         addLevelOneExplanation,
         addInflectionVisible,
         cardClickDoesNotEdit,
         editModalOpen,
         editKeepsForgettingLevel,
+        wordEditDateConsistent,
         sentenceMeaningHiddenByDefault,
         sentenceDetailSpacingCompact,
         sentenceMeaningCanToggle,
         sentenceHeightStableOnMeaningToggle,
+        sentenceLevelFilterWorks,
+        wordLevelFilterPersists,
+        sentenceLevelFilterPersists,
         sentenceFooterStaysOnOneLine,
         sentenceAddModalFitsMobile,
+        sentenceAddDateConsistent,
+        sentenceEditDateConsistent,
         libraryHidden: library.hidden,
         libraryDisplay: getComputedStyle(library).display,
         curriculumHidden: curriculum.hidden,
@@ -330,6 +434,8 @@ app.whenReady().then(async () => {
         clearRestoresAll,
         activityRemovedFromStudyLogs,
         dateInputBesideHeading,
+        dateFilterUnframed,
+        studyLogDateConsistent,
         studyLogDetailVisible,
         detailReplacesList,
         listRestoredByBack,
@@ -341,6 +447,7 @@ app.whenReady().then(async () => {
         relatedUnitLinkVisible,
         returnedToRelatedUnit,
         settingsVisible,
+        pageContainersConsistent,
         settingsFieldsSafe,
         sqliteDefaultVisible,
         migrationDisabledBeforeVerification,
@@ -356,12 +463,14 @@ app.whenReady().then(async () => {
   console.log(JSON.stringify(result));
   const passed = result.libraryHidden
     && result.summaryInitial
+    && result.sqliteStorageBadgeAccurate
     && result.curriculumProgressSummary
     && result.distributionComplete
     && result.reviewOnlyOnSummary
     && result.largeHeaderAbsent
     && result.libraryUsesFullWidth
     && result.libraryHeaderUsesFullWidth
+    && result.levelFilterHasAllOptions
     && result.addButtonVisible
     && result.wordCardComplete
     && result.editUsesAccessibleIconButton
@@ -371,20 +480,29 @@ app.whenReady().then(async () => {
     && result.wordDetailSpacingCompact
     && result.wordMeaningCanToggle
     && result.wordHeightStableOnMeaningToggle
+    && result.wordLevelFilterWorks
+    && result.wordSearchAndLevelCombine
     && result.addModalOpen
     && result.wordAddModalFitsMobile
+    && result.wordAddDateConsistent
     && result.addForgettingLevelHidden
     && result.addLevelOneExplanation
     && result.addInflectionVisible
     && result.cardClickDoesNotEdit
     && result.editModalOpen
     && result.editKeepsForgettingLevel
+    && result.wordEditDateConsistent
     && result.sentenceMeaningHiddenByDefault
     && result.sentenceDetailSpacingCompact
     && result.sentenceMeaningCanToggle
     && result.sentenceHeightStableOnMeaningToggle
+    && result.sentenceLevelFilterWorks
+    && result.wordLevelFilterPersists
+    && result.sentenceLevelFilterPersists
     && result.sentenceFooterStaysOnOneLine
     && result.sentenceAddModalFitsMobile
+    && result.sentenceAddDateConsistent
+    && result.sentenceEditDateConsistent
     && !result.menuBarVisible
     && result.libraryDisplay === 'none'
     && result.curriculumHidden
@@ -417,6 +535,8 @@ app.whenReady().then(async () => {
     && result.clearRestoresAll
     && result.activityRemovedFromStudyLogs
     && result.dateInputBesideHeading
+    && result.dateFilterUnframed
+    && result.studyLogDateConsistent
     && result.studyLogDetailVisible
     && result.detailReplacesList
     && result.listRestoredByBack
@@ -428,6 +548,7 @@ app.whenReady().then(async () => {
     && result.relatedUnitLinkVisible
     && result.returnedToRelatedUnit
     && result.settingsVisible
+    && result.pageContainersConsistent
     && result.settingsFieldsSafe
     && result.sqliteDefaultVisible
     && result.migrationDisabledBeforeVerification

@@ -54,6 +54,15 @@ function formatReviewDate(value) {
   return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('ja-JP').format(date) : value;
 }
 
+function DateInput({ value = '', placeholder = '日付を選択', wrapperClassName = '', children, ...props }) {
+  const normalizedValue = value || '';
+  return <span className={`date-input-shell${normalizedValue ? '' : ' empty'}${wrapperClassName ? ` ${wrapperClassName}` : ''}`}>
+    <Input type="date" value={normalizedValue} {...props} />
+    {!normalizedValue && <span className="date-input-placeholder" aria-hidden="true">{placeholder}</span>}
+    {children}
+  </span>;
+}
+
 function ActivityGraph({ logs, selectedDate, onSelect }) {
   const days = useMemo(() => {
     const counts = new Map();
@@ -82,7 +91,7 @@ function Summary({ hidden, words, sentences, units, logs, loadError, selectedDat
   const wordCounts = forgettingLevelCounts(words), sentenceCounts = forgettingLevelCounts(sentences);
   const maximum = Math.max(1, ...wordCounts, ...sentenceCounts);
   const cards = [['単語', words.length, '登録済み', 'summary-word-count'], ['英文', sentences.length, '登録済み', 'summary-sentence-count'], ['カリキュラム', units.length, '単元', 'summary-unit-count'], ['平均理解度', `${average}%`, '全単元', 'summary-mastery-average'], ['学習開始済み', started, '単元', 'summary-started-count'], ['完了', completed, '理解度100%の単元', 'summary-completed-count']];
-  return <section className="summary-view" id="summary-view" hidden={hidden}>
+  return <section className="summary-view page-container" id="summary-view" hidden={hidden}>
     <div className="summary-hero"><p>積み重ねた内容と、次に復習するものをひと目で確認できます。</p><Button id="start-review" className="review-start" onClick={onReview}><Sparkles size={17} />復習をはじめる</Button></div>
     {loadError && <div className="migration-notice" role="alert"><Database size={18} /><div><strong>Supabaseデータを表示できません</strong><p>{loadError}</p></div></div>}
     <div className="summary-grid">{cards.map(([label, value, hint, id]) => <article className="summary-card" key={id}><span>{label}</span><strong id={id}>{value}</strong><small>{hint}</small></article>)}</div>
@@ -112,7 +121,7 @@ function EntryFields({ kind, form, setForm, editing }) {
       <Label>意味<Textarea name="meaning" rows={3} value={form.meaning || ''} onChange={e => field('meaning', e.target.value)} /></Label>
       <Label>類似の英文<Textarea name="similar_sentences" rows={3} value={form.similar_sentences || ''} onChange={e => field('similar_sentences', e.target.value)} /></Label>
     </>}
-    <div className="field-row"><Label>最終復習日<Input name="last_reviewed_at" type="date" value={(form.last_reviewed_at || '').slice(0, 10)} onChange={e => field('last_reviewed_at', e.target.value)} /></Label>
+    <div className="field-row"><Label>最終復習日<DateInput name="last_reviewed_at" aria-label="最終復習日" value={(form.last_reviewed_at || '').slice(0, 10)} onChange={e => field('last_reviewed_at', e.target.value)} /></Label>
       {editing ? <Label className="forgetting-level-field">忘却レベル<Select name="forgetting_level" value={String(form.forgetting_level || 1)} onValueChange={value => field('forgetting_level', value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Array.from({ length: 8 }, (_, i) => <SelectItem key={i + 1} value={String(i + 1)}>レベル {i + 1}</SelectItem>)}</SelectContent></Select></Label>
         : <div className="default-level-note"><span>忘却レベル</span><strong>レベル 1</strong><small>新規項目はレベル1で登録され、復習結果に応じて自動更新されます。</small></div>}
     </div>
@@ -148,16 +157,17 @@ function LibraryEntryCard({ kind, entry, onEdit }) {
   </article>;
 }
 
-function Library({ hidden, kind, entries, search, onSearch, status, onAdd, onEdit, searchRef }) {
+function Library({ hidden, kind, entries, search, onSearch, levelFilter, onLevelFilter, status, onAdd, onEdit, searchRef }) {
   const config = configs[kind];
-  return <section className="workspace" id="library-workspace" hidden={hidden}><section className="list-panel library-list-panel">
-    <div className="list-toolbar"><div className="library-tools"><Label className="search"><Search size={16} /><Input ref={searchRef} id="search" type="search" placeholder={`${config.singular}を検索`} value={search} onChange={e => onSearch(e.target.value)} /></Label><Button id="add-entry" type="button" onClick={onAdd}>{config.singular}を追加</Button></div></div>
-    <div id="status" className="status">{status || `${entries.length} 件`}</div><div id="entry-list" className="entry-list">{entries.length ? entries.map(entry => <LibraryEntryCard kind={kind} entry={entry} onEdit={onEdit} key={entry.id} />) : <div className="empty">まだ{config.singular}がありません。「追加」から登録できます。</div>}</div>
+  const visibleEntries = levelFilter === 'all' ? entries : entries.filter(entry => Number(entry.forgetting_level || 1) === Number(levelFilter));
+  return <section className="workspace page-container" id="library-workspace" hidden={hidden}><section className="list-panel library-list-panel">
+    <div className="list-toolbar"><div className="library-tools"><Label className="search"><Search size={16} /><Input ref={searchRef} id="search" type="search" placeholder={`${config.singular}を検索`} value={search} onChange={e => onSearch(e.target.value)} /></Label><Label className="level-filter"><span>忘却レベル</span><select id="forgetting-level-filter" value={levelFilter} onChange={event => onLevelFilter(event.target.value)}><option value="all">すべて</option>{Array.from({ length: 8 }, (_, index) => <option key={index + 1} value={String(index + 1)}>レベル {index + 1}</option>)}</select></Label><Button id="add-entry" type="button" onClick={onAdd}>{config.singular}を追加</Button></div></div>
+    <div id="status" className="status">{status === '検索中…' ? status : `${visibleEntries.length} 件`}</div><div id="entry-list" className="entry-list">{visibleEntries.length ? visibleEntries.map(entry => <LibraryEntryCard kind={kind} entry={entry} onEdit={onEdit} key={entry.id} />) : <div className="empty">{search || levelFilter !== 'all' ? '条件に一致する項目はありません。' : `まだ${config.singular}がありません。「追加」から登録できます。`}</div>}</div>
   </section></section>;
 }
 
 function CurriculumList({ hidden, units, onOpenUnit, onOpenGrammar }) {
-  return <section className="curriculum-view" id="curriculum-view" hidden={hidden}><section className="list-panel"><div className="view-status-row"><span id="curriculum-status" className="status">{units.length} 単元</span></div><div id="curriculum-list" className="curriculum-list">{units.length ? units.map((unit, index) => {
+  return <section className="curriculum-view page-container" id="curriculum-view" hidden={hidden}><section className="list-panel"><div className="view-status-row"><span id="curriculum-status" className="status">{units.length} 単元</span></div><div id="curriculum-list" className="curriculum-list">{units.length ? units.map((unit, index) => {
     const mastery = Math.max(0, Math.min(100, Number(unit.mastery_percent) || 0));
     return <article className="curriculum-card" data-unit-id={unit.id} role="button" tabIndex={0} key={unit.id} onClick={() => onOpenUnit(unit.id)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpenUnit(unit.id); } }}><div className="curriculum-card-head"><div><span className="order-badge">UNIT {index + 1}</span><h3>{unit.title}</h3></div><span className="mastery-badge">理解度 {mastery}%</span></div><div className="mastery-track" aria-label={`理解度 ${mastery}%`}><span style={{ width: `${mastery}%` }} /></div><p className="curriculum-objective">{unit.learning_objective || '学習目標は未設定です。'}</p><div className="relations"><strong>関連する英文</strong>{unit.grammar_items.length ? unit.grammar_items.map(item => <div className="relation-row" key={item.id}><span>{item.title}</span><Button variant="outline" size="sm" data-action="open" data-grammar-id={item.id} onClick={event => { event.stopPropagation(); onOpenGrammar(item.id); }}>開く</Button></div>) : <small>関連する英文はまだありません。</small>}</div><span className="detail-link">詳しく学ぶ →</span></article>;
   }) : <div className="empty">まだ単元が登録されていません。</div>}</div></section></section>;
@@ -167,7 +177,7 @@ function CurriculumDetail({ hidden, unit, onBack, onOpenGrammar, onOpenLog }) {
   if (!unit) return null;
   const mastery = Math.max(0, Math.min(100, Number(unit.mastery_percent) || 0)), details = unit.details || {};
   const Section = ({ number, title, children }) => <section><h3><span>{number}</span>{title}</h3>{children}</section>;
-  return <section className="curriculum-detail-view" id="curriculum-detail-view" hidden={hidden}><Button id="back-to-curriculum" variant="ghost" className="back-button" onClick={onBack}><ChevronLeft size={17} />カリキュラム一覧へ</Button><article id="curriculum-detail" className="curriculum-detail">
+  return <section className="curriculum-detail-view page-container" id="curriculum-detail-view" hidden={hidden}><Button id="back-to-curriculum" variant="ghost" className="back-button" onClick={onBack}><ChevronLeft size={17} />カリキュラム一覧へ</Button><article id="curriculum-detail" className="curriculum-detail">
     <header className="detail-header"><div><p className="eyebrow">UNIT {unit.sort_order}</p><h2>{unit.title}</h2></div><span className="mastery-badge">理解度 {mastery}%</span></header><div className="detail-mastery"><div className="mastery-track" aria-label={`理解度 ${mastery}%`}><span style={{ width: `${mastery}%` }} /></div></div>
     <Section number="01" title="この単元でできるようになること"><p>{unit.learning_objective || '学習目標は未設定です。'}</p></Section>
     <Section number="02" title="まず知ること"><p>{details.basics || '基礎説明はまだ登録されていません。'}</p></Section>
@@ -182,9 +192,9 @@ function CurriculumDetail({ hidden, unit, onBack, onOpenGrammar, onOpenLog }) {
 function StudyLogs({ hidden, logs, selectedDate, onDate, selectedId, onSelect, onBack, onOpenUnit, onUpdateNote }) {
   const filtered = selectedDate ? logs.filter(log => formatDateKey(log.recorded_at) === selectedDate) : logs;
   const selected = filtered.find(log => log.id === Number(selectedId)) || null;
-  return <section className={`study-log-view${selected ? ' detail-open' : ''}`} id="study-log-view" hidden={hidden}>{selected
+  return <section className={`study-log-view page-container${selected ? ' detail-open' : ''}`} id="study-log-view" hidden={hidden}>{selected
     ? <div className="study-log-detail-screen"><Button id="back-to-study-logs" type="button" variant="ghost" className="back-button" onClick={onBack}><ChevronLeft size={17} />学習記録一覧へ</Button><section className="list-panel" id="study-log-detail"><StudyLogDetail log={selected} onOpenUnit={onOpenUnit} onUpdateNote={onUpdateNote} /></section></div>
-    : <aside className="list-panel"><div className="panel-heading study-log-heading"><span id="study-log-count" className="status">{selectedDate ? `${selectedDate} · ${filtered.length} 件` : `${filtered.length} 件`}</span><div className="date-filter"><Label>日付を指定<span className={`date-input-control${selectedDate ? '' : ' empty'}`}><Input id="study-log-date-filter" type="date" aria-label="学習記録を日付で絞り込む" max={formatDateKey(new Date())} value={selectedDate} onChange={event => onDate(event.target.value)} />{!selectedDate && <span className="date-input-placeholder" aria-hidden="true">日付を選択</span>}<Button id="clear-study-log-date" className="date-clear-inside" type="button" variant="ghost" size="icon" aria-label="日付選択を解除" hidden={!selectedDate} onClick={() => onDate('')}>×</Button></span></Label></div></div>
+    : <aside className="list-panel"><div className="panel-heading study-log-heading"><span id="study-log-count" className="status">{selectedDate ? `${selectedDate} · ${filtered.length} 件` : `${filtered.length} 件`}</span><div className="date-filter"><span className="date-filter-label">日付指定</span><DateInput wrapperClassName="date-input-control" id="study-log-date-filter" aria-label="学習記録を日付で絞り込む" max={formatDateKey(new Date())} value={selectedDate} onChange={event => onDate(event.target.value)}><Button id="clear-study-log-date" className="date-clear-inside" type="button" variant="ghost" size="icon" aria-label="日付選択を解除" hidden={!selectedDate} onClick={() => onDate('')}>×</Button></DateInput></div></div>
       <div id="study-log-list" className="study-log-list">{filtered.length ? filtered.map(log => <Button variant="outline" className="study-log-card" data-study-log-id={log.id} key={log.id} onClick={() => onSelect(log.id)}><time>{formatRecordedAt(log.recorded_at)}</time><strong>{log.title}</strong><span>{log.curriculum_unit_title || '関連単元なし'}</span></Button>) : <div className="empty">{selectedDate ? 'この日の学習記録はありません。' : '学習記録はまだありません。Codexに「今の話を記録して」と伝えると追加できます。'}</div>}</div></aside>}
   </section>;
 }
@@ -204,16 +214,15 @@ function ReviewDialog({ open, onOpenChange, queue, setQueue, onFinish }) {
   return <Dialog open={open} onOpenChange={value => { onOpenChange(value); if (!value) onFinish(); }}><DialogContent id="review-dialog" className="review-dialog" aria-describedby="review-description"><div id="review-content">{!current ? <><p className="eyebrow">REVIEW COMPLETE</p><DialogTitle>復習完了</DialogTitle><DialogDescription id="review-description">今の復習対象はありません。</DialogDescription><DialogClose asChild><Button className="review-close">閉じる</Button></DialogClose></> : !revealed ? <><p className="eyebrow">{config.singular} / レベル {current.entry.forgetting_level || 1}</p><DialogTitle>{current.entry[config.primary]}</DialogTitle><DialogDescription id="review-description">答えを思い浮かべてから表示してください。</DialogDescription><Button id="show-answer" className="answer-button" onClick={() => setRevealed(true)}>答えを表示</Button></> : <><p className="eyebrow">ANSWER</p><DialogTitle>{current.entry[config.primary]}</DialogTitle><DialogDescription id="review-description" className="review-answer">{current.entry[config.secondary]}</DialogDescription>{current.entry[config.detail] && <p>{current.entry[config.detail]}</p>}<p className="review-prompt">回答結果を選んでください</p><div className="review-actions"><Button data-result="easy" onClick={() => answer('easy')}>ヒントなしで答えられた</Button><Button variant="secondary" data-result="normal" onClick={() => answer('normal')}>ヒントありで答えられた</Button><Button variant="destructive" data-result="hard" onClick={() => answer('hard')}>分からなかった</Button></div></>}</div></DialogContent></Dialog>;
 }
 
-function SupabaseSettings({ hidden }) {
+function SupabaseSettings({ hidden, storeState, onStoreStateChange }) {
   const isWeb = api.platform === 'web';
   const [form, setForm] = useState({ url: '', publishableKey: '' });
   const [status, setStatus] = useState(''), [verified, setVerified] = useState(false), [busy, setBusy] = useState(false);
   const [setup, setSetup] = useState(null), [confirmOpen, setConfirmOpen] = useState(false), [confirmed, setConfirmed] = useState(false), [result, setResult] = useState(null);
-  const [storeState, setStoreState] = useState({ activeStore: 'sqlite', migrationVerified: false });
   const [accessSetup, setAccessSetup] = useState(null), [accessVerified, setAccessVerified] = useState(false);
   const [accessStatus, setAccessStatus] = useState(''), [accessResult, setAccessResult] = useState(null);
   const [switchOpen, setSwitchOpen] = useState(false), [switchConfirmed, setSwitchConfirmed] = useState(false);
-  useEffect(() => { Promise.all([api.getSupabaseSettings(), api.getDataStoreStatus()]).then(async ([settings, dataStore]) => { setForm(settings); setStoreState(dataStore); if (isWeb && dataStore.activeStore !== 'supabase' && dataStore.diagnostics?.accessAuthorized === true) { setAccessStatus('保存済みの端末認証でSupabaseデータを確認しています…'); try { const checked = await api.verifySupabaseData(); setAccessVerified(true); setAccessResult(checked); setAccessStatus('Supabaseデータを確認できました。追加のSQL実行は不要です。'); } catch (error) { setAccessStatus(error.message); } } }).catch(error => { setStatus(error.message); setAccessStatus(error.message); }); }, [isWeb]);
+  useEffect(() => { Promise.all([api.getSupabaseSettings(), api.getDataStoreStatus()]).then(async ([settings, dataStore]) => { setForm(settings); onStoreStateChange(dataStore); if (isWeb && dataStore.activeStore !== 'supabase' && dataStore.diagnostics?.accessAuthorized === true) { setAccessStatus('保存済みの端末認証でSupabaseデータを確認しています…'); try { const checked = await api.verifySupabaseData(); setAccessVerified(true); setAccessResult(checked); setAccessStatus('Supabaseデータを確認できました。追加のSQL実行は不要です。'); } catch (error) { setAccessStatus(error.message); } } }).catch(error => { setStatus(error.message); setAccessStatus(error.message); }); }, [isWeb, onStoreStateChange]);
   const field = (name, value) => { setForm(previous => ({ ...previous, [name]: value })); setVerified(false); setSetup(null); setResult(null); };
   async function save() {
     setBusy(true); setStatus('');
@@ -246,21 +255,21 @@ function SupabaseSettings({ hidden }) {
   }
   async function verifyAccess() {
     setBusy(true); setAccessResult(null); setAccessStatus(isWeb ? '端末認証とSupabaseデータを確認しています…' : 'SQLiteとSupabaseの全データを再照合しています…'); setStatus(isWeb ? 'Supabaseデータを確認しています…' : 'SQLiteとSupabaseの全データを再照合しています…');
-    try { const checked = await api.verifySupabaseData(); setAccessVerified(true); setAccessResult(checked); setStoreState(previous => ({ ...previous, migrationVerified: true })); const message = `確認完了（単語${checked.counts.words}件・英文${checked.counts.sentences}件・カリキュラム${checked.counts.curriculum_units}件・学習記録${checked.counts.study_logs}件）。`; setAccessStatus(message); setStatus(message); }
+    try { const checked = await api.verifySupabaseData(); setAccessVerified(true); setAccessResult(checked); onStoreStateChange(previous => ({ ...previous, migrationVerified: true })); const message = `確認完了（単語${checked.counts.words}件・英文${checked.counts.sentences}件・カリキュラム${checked.counts.curriculum_units}件・学習記録${checked.counts.study_logs}件）。`; setAccessStatus(message); setStatus(message); }
     catch (error) { setAccessVerified(false); setAccessStatus(`確認失敗: ${error.message}`); setStatus(error.message); } finally { setBusy(false); }
   }
   async function enableSupabase() {
     setSwitchOpen(false); setBusy(true); setStatus('切替前の最終照合を実行しています…');
-    try { await api.enableSupabase(); setStoreState({ activeStore: 'supabase', migrationVerified: true }); setStatus('読み書き先をSupabaseへ切り替えました。'); if (isWeb) window.location.reload(); }
+    try { await api.enableSupabase(); onStoreStateChange({ activeStore: 'supabase', migrationVerified: true }); setStatus('読み書き先をSupabaseへ切り替えました。'); if (isWeb) window.location.reload(); }
     catch (error) { setStatus(`${error.message} 現在の読み書き先はSQLiteのままです。`); } finally { setBusy(false); setSwitchConfirmed(false); }
   }
   async function enableSqlite() {
     setBusy(true); setStatus('SQLiteへ戻しています…');
-    try { await api.enableSqlite(); setStoreState(previous => ({ ...previous, activeStore: 'sqlite' })); setStatus('読み書き先をSQLiteへ戻しました。Supabase上のコピーは削除されません。'); }
+    try { await api.enableSqlite(); onStoreStateChange(previous => ({ ...previous, activeStore: 'sqlite' })); setStatus('読み書き先をSQLiteへ戻しました。Supabase上のコピーは削除されません。'); }
     catch (error) { setStatus(error.message); } finally { setBusy(false); }
   }
   const countLabels = { words: '単語', sentences: '英文', curriculum_units: 'カリキュラム', curriculum_unit_grammar_items: '関連付け', study_logs: '学習記録' };
-  return <section className="settings-view" id="settings-view" hidden={hidden}>
+  return <section className="settings-view page-container" id="settings-view" hidden={hidden}>
     <header className="settings-heading"><p>現在の読み書き先: <strong>{storeState.activeStore === 'supabase' ? 'Supabase' : isWeb ? '未設定' : 'ローカルSQLite'}</strong></p><span className={`connection-badge${verified ? ' verified' : ''}`}>{storeState.activeStore === 'supabase' ? <><ShieldCheck size={15} />Supabaseを使用中</> : verified ? <><ShieldCheck size={15} />接続確認済み</> : <><Database size={15} />{isWeb ? '初期設定が必要' : 'SQLiteが既定'}</>}</span></header>
     <section className="settings-card"><div className="settings-card-heading"><h3>Data API</h3><p>保存するのはURLとPublishable Keyだけです。DBパスワード、Secret Key、Service Role Keyは受け付けません。</p></div>
       <form onSubmit={event => { event.preventDefault(); save(); }}>
@@ -294,12 +303,14 @@ export default function App() {
   const [words, setWords] = useState([]), [sentences, setSentences] = useState([]), [units, setUnits] = useState([]), [logs, setLogs] = useState([]);
   const [loadError, setLoadError] = useState('');
   const [entries, setEntries] = useState([]), [search, setSearch] = useState(''), [libraryStatus, setLibraryStatus] = useState('');
+  const [levelFilters, setLevelFilters] = useState({ words: 'all', sentences: 'all' });
   const [entryOpen, setEntryOpen] = useState(false), [editingEntry, setEditingEntry] = useState(null);
   const [selectedUnitId, setSelectedUnitId] = useState(null), [selectedDate, setSelectedDate] = useState(''), [selectedLogId, setSelectedLogId] = useState(null);
   const [reviewOpen, setReviewOpen] = useState(false), [reviewQueue, setReviewQueue] = useState([]);
   const [pullDistance, setPullDistance] = useState(0), [pullStatus, setPullStatus] = useState('idle');
+  const [storeState, setStoreState] = useState({ activeStore: 'loading', migrationVerified: false });
   const searchRef = useRef(null), searchTimer = useRef(null), pullStart = useRef(null), pullDistanceRef = useRef(0);
-  const refreshAll = useCallback(async () => { try { const state = await api.getDataStoreStatus(); if (api.platform === 'web' && state.activeStore !== 'supabase') throw new Error(state.needsReauthorization ? '端末認証を再設定してください。保存済みのURLとPublishable Keyは維持されています。' : '設定画面でSupabaseを有効化するとデータが表示されます。'); const [nextWords, nextSentences, nextUnits, nextLogs] = await Promise.all([api.list('words', ''), api.list('sentences', ''), api.listCurriculum(), api.listStudyLogs()]); setWords(nextWords); setSentences(nextSentences); setUnits(nextUnits); setLogs(nextLogs); setLoadError(''); } catch (error) { setLoadError(error.message); } }, []);
+  const refreshAll = useCallback(async () => { try { const state = await api.getDataStoreStatus(); setStoreState(state); if (api.platform === 'web' && state.activeStore !== 'supabase') throw new Error(state.needsReauthorization ? '端末認証を再設定してください。保存済みのURLとPublishable Keyは維持されています。' : '設定画面でSupabaseを有効化するとデータが表示されます。'); const [nextWords, nextSentences, nextUnits, nextLogs] = await Promise.all([api.list('words', ''), api.list('sentences', ''), api.listCurriculum(), api.listStudyLogs()]); setWords(nextWords); setSentences(nextSentences); setUnits(nextUnits); setLogs(nextLogs); setLoadError(''); } catch (error) { setLoadError(error.message); } }, []);
   const refreshLibrary = useCallback(async (nextKind = kind, query = search) => { const next = await api.list(nextKind, query); setEntries(next); setLibraryStatus(`${next.length} 件`); }, [kind, search]);
   useEffect(() => { refreshAll(); }, [refreshAll]);
   useEffect(() => { if (view !== 'words' && view !== 'sentences') return; clearTimeout(searchTimer.current); searchTimer.current = setTimeout(() => refreshLibrary(kind, search), 180); return () => clearTimeout(searchTimer.current); }, [view, kind, search, refreshLibrary]);
@@ -319,16 +330,18 @@ export default function App() {
   async function finishPull() { if (pullStart.current == null) return; const distance = pullDistanceRef.current, shouldRefresh = distance >= 64; pullStart.current = null; pullDistanceRef.current = 0; if (!shouldRefresh) { if (distance >= 5) { setPullDistance(0); setPullStatus('idle'); } return; } setPullDistance(52); setPullStatus('refreshing'); const tasks = [refreshAll()]; if (view === 'words' || view === 'sentences') tasks.push(refreshLibrary(kind, search)); await Promise.allSettled(tasks); setPullStatus('done'); setPullDistance(0); setTimeout(() => setPullStatus('idle'), 900); }
   const selectedUnit = units.find(unit => unit.id === selectedUnitId);
   const activeTab = view === 'curriculum-detail' ? 'curriculum' : view;
+  const storeBadge = storeState.activeStore === 'supabase' ? { label: 'Supabaseに保存', Icon: ShieldCheck, className: ' supabase' } : storeState.activeStore === 'sqlite' ? { label: 'この端末に保存', Icon: Check, className: '' } : { label: api.platform === 'web' ? '保存先が未設定' : '保存先を確認中', Icon: Database, className: ' pending' };
+  const StoreBadgeIcon = storeBadge.Icon;
   return <>
     <div className={`pull-refresh ${pullStatus}`} style={{ '--pull-distance': `${pullDistance}px` }} role="status" aria-live="polite">{pullStatus === 'refreshing' ? '更新中…' : pullStatus === 'done' ? '更新しました' : pullDistance >= 64 ? '離して更新' : '引き下げて更新'}</div>
-    <main className="app-shell" onTouchStart={beginPull} onTouchMove={movePull} onTouchEnd={finishPull} onTouchCancel={finishPull}><header className="topbar"><div className="brand"><span className="brand-mark"><BookOpen size={18} /></span><div><strong>English Shelf</strong><small>LOCAL STUDY DESK</small></div></div><span className="local-badge"><Check size={13} />この端末に保存</span></header>
+    <main className="app-shell" onTouchStart={beginPull} onTouchMove={movePull} onTouchEnd={finishPull} onTouchCancel={finishPull}><header className="topbar"><div className="brand"><span className="brand-mark"><BookOpen size={18} /></span><div><strong>English Shelf</strong><small>LOCAL STUDY DESK</small></div></div><span className={`local-badge${storeBadge.className}`} data-active-store={storeState.activeStore}><StoreBadgeIcon size={13} />{storeBadge.label}</span></header>
       <nav className="tabs" aria-label="メインナビゲーション">{tabs.map(({ id, label, Icon }) => <Button variant="ghost" className={`tab${activeTab === id ? ' active' : ''}`} data-kind={id} key={id} aria-label={label} title={label} onClick={() => navigate(id)}><Icon className="tab-icon" size={19} aria-hidden="true" /><span className="tab-label">{label}</span></Button>)}</nav>
       <Summary hidden={view !== 'summary'} words={words} sentences={sentences} units={units} logs={logs} loadError={loadError} selectedDate={selectedDate} onSelectDate={selectActivityDate} onReview={startReview} />
-      <Library hidden={view !== 'words' && view !== 'sentences'} kind={kind} entries={entries} search={search} onSearch={value => { setSearch(value); setLibraryStatus('検索中…'); }} status={libraryStatus} onAdd={() => { setEditingEntry(null); setEntryOpen(true); }} onEdit={editEntry} searchRef={searchRef} />
+      <Library hidden={view !== 'words' && view !== 'sentences'} kind={kind} entries={entries} search={search} onSearch={value => { setSearch(value); setLibraryStatus('検索中…'); }} levelFilter={levelFilters[kind]} onLevelFilter={value => setLevelFilters(previous => ({ ...previous, [kind]: value }))} status={libraryStatus} onAdd={() => { setEditingEntry(null); setEntryOpen(true); }} onEdit={editEntry} searchRef={searchRef} />
       <CurriculumList hidden={view !== 'curriculum'} units={units} onOpenUnit={openUnit} onOpenGrammar={id => editEntry(id, 'sentences')} />
       <CurriculumDetail hidden={view !== 'curriculum-detail'} unit={selectedUnit} onBack={() => setView('curriculum')} onOpenGrammar={id => editEntry(id, 'sentences')} onOpenLog={openLog} />
       <StudyLogs hidden={view !== 'study-logs'} logs={logs} selectedDate={selectedDate} onDate={value => { setSelectedDate(value); setSelectedLogId(null); }} selectedId={selectedLogId} onSelect={selectStudyLog} onBack={closeStudyLog} onOpenUnit={openUnit} onUpdateNote={updateLog} />
-      <SupabaseSettings hidden={view !== 'settings'} />
+      <SupabaseSettings hidden={view !== 'settings'} storeState={storeState} onStoreStateChange={setStoreState} />
     </main>
     <EntryDialog open={entryOpen} onOpenChange={setEntryOpen} kind={kind} entry={editingEntry} onSaved={async () => { await Promise.all([refreshLibrary(), refreshAll()]); setLibraryStatus('保存しました。'); }} />
     <ReviewDialog open={reviewOpen} onOpenChange={setReviewOpen} queue={reviewQueue} setQueue={setReviewQueue} onFinish={refreshAll} />

@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const app = fs.readFileSync(path.join(root, 'src', 'renderer', 'App.jsx'), 'utf8');
+const css = fs.readFileSync(path.join(root, 'src', 'renderer', 'styles.css'), 'utf8');
 const html = fs.readFileSync(path.join(root, 'src', 'renderer', 'index.html'), 'utf8');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
@@ -108,7 +109,7 @@ test('curriculum remains read-only and keeps all seven sections', () => {
 test('study log content is read-only while the learner memo remains editable', () => {
   assert.match(app, /id="study-log-date-filter"/);
   assert.match(app, /date-input-placeholder/);
-  assert.match(app, />日付を選択<\/span>/);
+  assert.match(app, /placeholder = '日付を選択'/);
   assert.match(app, /id="clear-study-log-date"/);
   assert.match(app, /id="study-log-user-note"/);
   assert.match(app, /data-save-study-log-note/);
@@ -119,6 +120,35 @@ test('study log content is read-only while the learner memo remains editable', (
   assert.match(app, /onClick=\{\(\) => onSelect\(log\.id\)\}/);
   assert.match(app, /id="back-to-study-logs"/);
   assert.match(app, /\{selected\s*\? <div className="study-log-detail-screen"/);
+});
+
+test('every date input uses the shared empty-state guidance', () => {
+  assert.match(app, /function DateInput/);
+  assert.match(app, /<DateInput name="last_reviewed_at"/);
+  assert.match(app, /<DateInput wrapperClassName="date-input-control"/);
+  assert.match(app, /date-input-shell/);
+});
+
+test('header storage badge follows the active data store without exposing settings', () => {
+  assert.match(app, /data-active-store=\{storeState\.activeStore\}/);
+  assert.match(app, /label: 'Supabaseに保存'/);
+  assert.match(app, /label: 'この端末に保存'/);
+  assert.doesNotMatch(app, /local-badge[^\n]+publishableKey/);
+});
+
+test('library level filter combines with search without mutating entries', () => {
+  assert.match(app, /id="forgetting-level-filter"/);
+  assert.match(app, /<option value="all">すべて<\/option>/);
+  assert.match(app, /Number\(entry\.forgetting_level \|\| 1\) === Number\(levelFilter\)/);
+  assert.match(app, /levelFilters, setLevelFilters/);
+  assert.doesNotMatch(app, /onLevelFilter[^\n]+api\.save/);
+});
+
+test('all primary views share one page width container', () => {
+  for (const view of ['summary-view', 'workspace', 'curriculum-view', 'curriculum-detail-view', 'study-log-view', 'settings-view']) {
+    assert.match(app, new RegExp(`${view}[^"\\}]*page-container|${view} page-container`));
+  }
+  assert.match(css, /\.page-container\s*\{[^}]*max-width:1160px/);
 });
 
 test('Ctrl+F integration remains connected to the renderer', () => {
