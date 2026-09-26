@@ -35,12 +35,16 @@ test('PWA manifest, offline shell, iPhone metadata, and Vercel SPA config are pr
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'public', 'manifest.webmanifest'), 'utf8'));
   const html = fs.readFileSync(path.join(root, 'src', 'renderer', 'index.html'), 'utf8');
   const worker = fs.readFileSync(path.join(root, 'public', 'service-worker.js'), 'utf8');
+  const main = fs.readFileSync(path.join(root, 'src', 'main.js'), 'utf8');
   const vercel = JSON.parse(fs.readFileSync(path.join(root, 'vercel.json'), 'utf8'));
   assert.equal(manifest.display, 'standalone');
   assert.ok(manifest.icons.some(icon => icon.sizes === '192x192'));
   assert.ok(manifest.icons.some(icon => icon.sizes === '512x512'));
+  assert.ok(manifest.icons.every(icon => icon.type === 'image/png'));
   assert.match(html, /apple-mobile-web-app-capable/);
   assert.match(html, /apple-touch-icon/);
+  assert.match(html, /favicon-32\.png/);
+  assert.match(main, /icon-512\.png/);
   assert.match(worker, /caches\.open/);
   assert.deepEqual(vercel.rewrites, [{ source: '/(.*)', destination: '/index.html' }]);
 });

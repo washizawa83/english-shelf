@@ -75,7 +75,8 @@ app.whenReady().then(async () => {
       recordPage(summary);
       const storageBadge = document.querySelector('.local-badge');
       const topbar = document.querySelector('.topbar');
-      const compactIconOnlyHeader = Boolean(topbar?.querySelector('.brand-mark'))
+      const headerIcon = topbar?.querySelector('.brand-mark img');
+      const compactIconOnlyHeader = Boolean(headerIcon?.complete && headerIcon.naturalWidth === 192)
         && !topbar.querySelector('.brand')
         && !topbar.innerText.includes('English Shelf')
         && !topbar.innerText.includes('LOCAL STUDY DESK');

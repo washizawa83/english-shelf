@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BookA, BookOpen, BookText, Check, ChevronLeft, Copy, Database, Eye, EyeOff, GraduationCap, LayoutDashboard, NotebookPen, Pencil, Settings, ShieldCheck, Sparkles } from 'lucide-react';
+import { BookA, BookText, Check, ChevronLeft, Copy, Database, Eye, EyeOff, GraduationCap, LayoutDashboard, NotebookPen, Pencil, Settings, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Textarea } from './components/ui/textarea';
@@ -334,7 +334,7 @@ export default function App() {
   const StoreBadgeIcon = storeBadge.Icon;
   return <>
     <div className={`pull-refresh ${pullStatus}`} style={{ '--pull-distance': `${pullDistance}px` }} role="status" aria-live="polite">{pullStatus === 'refreshing' ? '更新中…' : pullStatus === 'done' ? '更新しました' : pullDistance >= 64 ? '離して更新' : '引き下げて更新'}</div>
-    <main className="app-shell" onTouchStart={beginPull} onTouchMove={movePull} onTouchEnd={finishPull} onTouchCancel={finishPull}><header className="topbar"><span className="brand-mark" aria-label="English Shelf"><BookOpen size={18} aria-hidden="true" /></span><span className={`local-badge${storeBadge.className}`} data-active-store={storeState.activeStore}><StoreBadgeIcon size={13} />{storeBadge.label}</span></header>
+    <main className="app-shell" onTouchStart={beginPull} onTouchMove={movePull} onTouchEnd={finishPull} onTouchCancel={finishPull}><header className="topbar"><span className="brand-mark" aria-label="English Shelf"><img src="./icons/icon-192.png" alt="" aria-hidden="true" /></span><span className={`local-badge${storeBadge.className}`} data-active-store={storeState.activeStore}><StoreBadgeIcon size={13} />{storeBadge.label}</span></header>
       <nav className="tabs" aria-label="メインナビゲーション">{tabs.map(({ id, label, Icon }) => <Button variant="ghost" className={`tab${activeTab === id ? ' active' : ''}`} data-kind={id} key={id} aria-label={label} title={label} onClick={() => navigate(id)}><Icon className="tab-icon" size={19} aria-hidden="true" /><span className="tab-label">{label}</span></Button>)}</nav>
       <Summary hidden={view !== 'summary'} words={words} sentences={sentences} units={units} logs={logs} loadError={loadError} selectedDate={selectedDate} onSelectDate={selectActivityDate} onReview={startReview} />
       <Library hidden={view !== 'words' && view !== 'sentences'} kind={kind} entries={entries} search={search} onSearch={value => { setSearch(value); setLibraryStatus('検索中…'); }} levelFilter={levelFilters[kind]} onLevelFilter={value => setLevelFilters(previous => ({ ...previous, [kind]: value }))} status={libraryStatus} onAdd={() => { setEditingEntry(null); setEntryOpen(true); }} onEdit={editEntry} searchRef={searchRef} />

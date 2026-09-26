@@ -30,7 +30,8 @@ app.whenReady().then(async () => {
     const tabLabels = [...document.querySelectorAll('.tab-label')];
     const storageBadge = document.querySelector('.local-badge');
     const topbar = document.querySelector('.topbar');
-    const compactIconOnlyHeader = Boolean(topbar?.querySelector('.brand-mark'))
+    const headerIcon = topbar?.querySelector('.brand-mark img');
+    const compactIconOnlyHeader = Boolean(headerIcon?.complete && headerIcon.naturalWidth === 192)
       && !topbar.querySelector('.brand')
       && !topbar.innerText.includes('English Shelf')
       && !topbar.innerText.includes('LOCAL STUDY DESK');
@@ -199,7 +200,7 @@ app.whenReady().then(async () => {
       bodyText: document.body.innerText.slice(0, 200)
     };
   })()`);
-  result.pwaFiles = ['manifest.webmanifest', 'service-worker.js', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'].every(file => fs.existsSync(path.join(root, file)));
+  result.pwaFiles = ['manifest.webmanifest', 'service-worker.js', 'icons/favicon-32.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'].every(file => fs.existsSync(path.join(root, file)));
   console.log(JSON.stringify(result));
   const passed = Object.entries(result).filter(([key]) => key !== 'bodyText').every(([, value]) => Boolean(value));
   window.destroy(); server.close(); app.exit(passed ? 0 : 1);
