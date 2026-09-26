@@ -124,6 +124,7 @@ test('study log content is read-only while the learner memo remains editable', (
 
 test('every date input uses the shared empty-state guidance', () => {
   assert.match(app, /function DateInput/);
+  assert.match(app, /date-input-shell\$\{normalizedValue \? '' : ' is-empty'\}/);
   assert.match(app, /<DateInput name="last_reviewed_at"/);
   assert.match(app, /<DateInput wrapperClassName="date-input-control"/);
   assert.match(app, /date-input-shell/);

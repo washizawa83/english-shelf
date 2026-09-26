@@ -56,7 +56,7 @@ function formatReviewDate(value) {
 
 function DateInput({ value = '', placeholder = '日付を選択', wrapperClassName = '', children, ...props }) {
   const normalizedValue = value || '';
-  return <span className={`date-input-shell${normalizedValue ? '' : ' empty'}${wrapperClassName ? ` ${wrapperClassName}` : ''}`}>
+  return <span className={`date-input-shell${normalizedValue ? '' : ' is-empty'}${wrapperClassName ? ` ${wrapperClassName}` : ''}`}>
     <Input type="date" value={normalizedValue} {...props} />
     {!normalizedValue && <span className="date-input-placeholder" aria-hidden="true">{placeholder}</span>}
     {children}

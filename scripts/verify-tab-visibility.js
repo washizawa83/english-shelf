@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('node:path');
+const fs = require('node:fs');
 const { StudyDatabase } = require('../src/database');
 const verificationWidth = Number(process.env.ENGLISH_SHELF_VERIFY_WIDTH) || 320;
 
@@ -58,15 +59,15 @@ app.whenReady().then(async () => {
         };
         await update('');
         const shell = input.closest('.date-input-shell');
-        const emptyState = shell?.classList.contains('empty')
+        const emptyState = shell?.classList.contains('is-empty')
           && shell.querySelector('.date-input-placeholder')?.textContent === '日付を選択';
         await update('2026-09-26');
         const selectedState = input.value === '2026-09-26'
-          && !shell.classList.contains('empty')
+          && !shell.classList.contains('is-empty')
           && !shell.querySelector('.date-input-placeholder');
         await update('');
         const clearedState = input.value === ''
-          && shell.classList.contains('empty')
+          && shell.classList.contains('is-empty')
           && shell.querySelector('.date-input-placeholder')?.textContent === '日付を選択';
         return emptyState && selectedState && clearedState && fitsViewport(shell) && fitsViewport(input);
       };
@@ -322,10 +323,13 @@ app.whenReady().then(async () => {
       const dateInputBesideHeading = Boolean(studyLogView.querySelector('.study-log-heading #study-log-date-filter'));
       const dateFilter = studyLogView.querySelector('.date-filter');
       const dateFilterStyle = getComputedStyle(dateFilter);
+      const dateShellStyle = getComputedStyle(dateFilter.querySelector('.date-input-shell'));
       const dateFilterUnframed = dateFilter?.querySelector('.date-filter-label')?.textContent === '日付指定'
         && !dateFilter.querySelector('.ui-label')
         && parseFloat(dateFilterStyle.borderTopWidth) === 0
         && dateFilterStyle.backgroundColor === 'rgba(0, 0, 0, 0)'
+        && dateShellStyle.backgroundColor === 'rgba(0, 0, 0, 0)'
+        && parseFloat(dateShellStyle.paddingTop) === 0
         && fitsViewport(dateFilter);
       const studyLogDateConsistent = await verifyDateInput(studyLogView.querySelector('#study-log-date-filter'));
       const listRestoredByBack = Boolean(studyLogView.querySelector('#study-log-list'))
@@ -557,6 +561,12 @@ app.whenReady().then(async () => {
     && !result.detailHeadings.some(heading => heading.includes('参考リンク'))
     && !result.detailHasManualControls
     && !result.hasPreviousOrNextUnit;
+
+  if (process.env.ENGLISH_SHELF_CAPTURE_PATH) {
+    await window.webContents.executeJavaScript(`document.querySelector('[data-kind="study-logs"]')?.click()`);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    fs.writeFileSync(process.env.ENGLISH_SHELF_CAPTURE_PATH, (await window.capturePage()).toPNG());
+  }
 
   window.destroy();
   database.close();

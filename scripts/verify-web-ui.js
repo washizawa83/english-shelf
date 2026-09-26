@@ -44,11 +44,11 @@ app.whenReady().then(async () => {
       };
       await update('');
       const shell = input.closest('.date-input-shell');
-      const emptyState = shell?.classList.contains('empty') && shell.querySelector('.date-input-placeholder')?.textContent === '日付を選択';
+      const emptyState = shell?.classList.contains('is-empty') && shell.querySelector('.date-input-placeholder')?.textContent === '日付を選択';
       await update('2026-09-26');
-      const selectedState = input.value === '2026-09-26' && !shell.classList.contains('empty') && !shell.querySelector('.date-input-placeholder');
+      const selectedState = input.value === '2026-09-26' && !shell.classList.contains('is-empty') && !shell.querySelector('.date-input-placeholder');
       await update('');
-      const clearedState = input.value === '' && shell.classList.contains('empty') && shell.querySelector('.date-input-placeholder')?.textContent === '日付を選択';
+      const clearedState = input.value === '' && shell.classList.contains('is-empty') && shell.querySelector('.date-input-placeholder')?.textContent === '日付を選択';
       return emptyState && selectedState && clearedState;
     };
     document.querySelector('[data-kind="summary"]')?.click();
@@ -62,10 +62,13 @@ app.whenReady().then(async () => {
     const dateControl = document.querySelector('.date-input-control');
     const dateFilter = document.querySelector('.date-filter');
     const dateFilterStyle = getComputedStyle(dateFilter);
+    const dateShellStyle = getComputedStyle(dateFilter.querySelector('.date-input-shell'));
     const dateFilterUnframed = dateFilter?.querySelector('.date-filter-label')?.textContent === '日付指定'
       && !dateFilter.querySelector('.ui-label')
       && parseFloat(dateFilterStyle.borderTopWidth) === 0
-      && dateFilterStyle.backgroundColor === 'rgba(0, 0, 0, 0)';
+      && dateFilterStyle.backgroundColor === 'rgba(0, 0, 0, 0)'
+      && dateShellStyle.backgroundColor === 'rgba(0, 0, 0, 0)'
+      && parseFloat(dateShellStyle.paddingTop) === 0;
     const dateInput = document.querySelector('#study-log-date-filter');
     const initialDatePlaceholderVisible = document.querySelector('.date-input-placeholder')?.innerText === '日付を選択'
       && dateInput?.value === '';
