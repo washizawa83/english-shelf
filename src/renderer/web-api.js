@@ -1,6 +1,13 @@
 const SETTINGS_KEY = 'english-shelf:supabase-settings';
 const RUNTIME_KEY = 'english-shelf:supabase-runtime';
 const tables = { words: 'english_shelf_words', sentences: 'english_shelf_sentences' };
+const defaultOrders = {
+  english_shelf_words: 'id.asc',
+  english_shelf_sentences: 'id.asc',
+  english_shelf_curriculum_units: 'sort_order.asc,id.asc',
+  english_shelf_curriculum_unit_grammar_items: 'unit_id.asc,grammar_item_id.asc',
+  english_shelf_study_logs: 'recorded_at.desc,id.desc'
+};
 const envSettings = { url: import.meta.env.VITE_SUPABASE_URL || '', publishableKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '' };
 
 function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; } }
@@ -16,7 +23,7 @@ async function request(table, query = '', options = {}) {
   const response = await fetch(`${config.url}/rest/v1/${table}${query}`, { method: options.method || 'GET', headers: { apikey: config.publishableKey, 'x-english-shelf-access-token': state.accessToken, Accept: 'application/json', 'Content-Type': 'application/json', Prefer: options.prefer || 'return=representation' }, body: options.body === undefined ? undefined : JSON.stringify(options.body) });
   const text = await response.text(); if (!response.ok) throw new Error(`Supabase Data APIエラー（HTTP ${response.status}）${text ? `: ${text.slice(0, 180)}` : ''}`); return text ? JSON.parse(text) : [];
 }
-async function all(table, order = 'id.asc') { return request(table, `?select=*&order=${order}`); }
+async function all(table, order = defaultOrders[table] || '') { return request(table, `?select=*${order ? `&order=${order}` : ''}`); }
 async function nextId(table) { const rows = await request(table, '?select=id&order=id.desc&limit=1'); return rows.length ? Number(rows[0].id) + 1 : 1; }
 async function list(kind, query = '') { const rows = await all(tables[kind], 'updated_at.desc,id.desc'), term = String(query).trim().toLocaleLowerCase(); return term ? rows.filter(row => Object.values(row).some(value => String(value ?? '').toLocaleLowerCase().includes(term))) : rows; }
 async function get(kind, id) { return (await request(tables[kind], `?select=*&id=eq.${Number(id)}&limit=1`))[0] || null; }
@@ -57,7 +64,7 @@ const webApi = {
   async prepareSupabaseMigration() { throw new Error('SQLite移行はデスクトップ版で実行してください。'); }, async runSupabaseMigration() { throw new Error('SQLite移行はデスクトップ版で実行してください。'); },
   async getDataStoreStatus() { const state = runtime(); return { activeStore: state.activeStore, migrationVerified: Boolean(state.verification) }; },
   async prepareSupabaseAccess() { validate(settings()); const token = randomToken(); saveRuntime({ activeStore: 'setup', accessToken: token, verification: null }); return { setupSql: await accessSql(token) }; },
-  async verifySupabaseData() { const counts = { words: (await all('english_shelf_words')).length, sentences: (await all('english_shelf_sentences')).length, curriculum_units: (await all('english_shelf_curriculum_units')).length, curriculum_unit_grammar_items: (await all('english_shelf_curriculum_unit_grammar_items')).length, study_logs: (await all('english_shelf_study_logs')).length }; const state = runtime(); saveRuntime({ ...state, verification: { counts, verifiedAt: new Date().toISOString() } }); return { counts }; },
+  async verifySupabaseData() { const counts = { words: (await all('english_shelf_words')).length, sentences: (await all('english_shelf_sentences')).length, curriculum_units: (await all('english_shelf_curriculum_units')).length, curriculum_unit_grammar_items: (await all('english_shelf_curriculum_unit_grammar_items', 'unit_id.asc,grammar_item_id.asc')).length, study_logs: (await all('english_shelf_study_logs')).length }; const state = runtime(); saveRuntime({ ...state, verification: { counts, verifiedAt: new Date().toISOString() } }); return { counts }; },
   async enableSupabase() { const checked = await this.verifySupabaseData(); const state = runtime(); saveRuntime({ ...state, activeStore: 'supabase' }); return { activeStore: 'supabase', ...checked }; },
   async enableSqlite() { throw new Error('SQLiteはデスクトップ版専用です。'); }
 };

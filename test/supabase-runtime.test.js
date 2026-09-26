@@ -42,6 +42,26 @@ test('Supabase adapter sends publishable and device keys and supports reads and 
   assert.ok(requests.every(request => request.options.headers['x-english-shelf-access-token'] === 'device-token'));
 });
 
+test('Supabase adapter orders composite-key relations without referencing an id column', async () => {
+  const requests = [];
+  const fetchImpl = async (url, options) => {
+    requests.push({ url, options });
+    return { ok: true, status: 200, text: async () => '[]' };
+  };
+  const store = new SupabaseDataStore(settings, 'device-token', { fetchImpl });
+  await store.all('english_shelf_curriculum_unit_grammar_items');
+  assert.match(requests[0].url, /order=unit_id\.asc,grammar_item_id\.asc/);
+  assert.doesNotMatch(requests[0].url, /order=id(?:\.|&|$)/);
+
+  await store.linkGrammarItem(7, 9);
+  await store.unlinkGrammarItem(7, 9);
+  const link = requests.find(request => request.options.method === 'POST' && request.url.includes('english_shelf_curriculum_unit_grammar_items'));
+  const unlink = requests.find(request => request.options.method === 'DELETE' && request.url.includes('english_shelf_curriculum_unit_grammar_items'));
+  assert.deepEqual(JSON.parse(link.options.body), { unit_id: 7, grammar_item_id: 9 });
+  assert.match(unlink.url, /unit_id=eq\.7&grammar_item_id=eq\.9/);
+  assert.doesNotMatch(unlink.url, /[?&]id=/);
+});
+
 test('desktop and MCP share the persisted data-store selection', () => {
   const fs = require('node:fs'), path = require('node:path');
   const main = fs.readFileSync(path.join(__dirname, '..', 'src', 'main.js'), 'utf8');

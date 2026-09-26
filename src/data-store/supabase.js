@@ -5,6 +5,13 @@ const definitions = {
   sentences: { table: 'english_shelf_sentences', required: 'title', fields: ['title', 'meaning', 'similar_sentences', 'last_reviewed_at', 'forgetting_level'] }
 };
 const statuses = new Set(['未着手', '学習中', '完了']);
+const defaultOrders = {
+  english_shelf_words: 'id.asc',
+  english_shelf_sentences: 'id.asc',
+  english_shelf_curriculum_units: 'sort_order.asc,id.asc',
+  english_shelf_curriculum_unit_grammar_items: 'unit_id.asc,grammar_item_id.asc',
+  english_shelf_study_logs: 'recorded_at.desc,id.desc'
+};
 
 class SupabaseDataStore {
   constructor(settings, accessToken, { fetchImpl = globalThis.fetch } = {}) { this.settings = settings; this.accessToken = accessToken; this.fetchImpl = fetchImpl; this.driver = 'supabase'; }
@@ -18,7 +25,7 @@ class SupabaseDataStore {
     if (!response.ok) throw new Error(`Supabase Data APIエラー（HTTP ${response.status}）${text ? `: ${text.slice(0, 240)}` : ''}`);
     return text ? JSON.parse(text) : [];
   }
-  async all(table, order = 'id.asc') { return this.request(table, `?select=*&order=${order}`); }
+  async all(table, order = defaultOrders[table] || '') { return this.request(table, `?select=*${order ? `&order=${order}` : ''}`); }
   async nextId(table) { const rows = await this.request(table, '?select=id&order=id.desc&limit=1'); return rows.length ? Number(rows[0].id) + 1 : 1; }
   async list(kind, query = '') {
     const { table, fields } = this.definition(kind); const rows = await this.all(table, 'updated_at.desc,id.desc'); const term = String(query || '').trim().toLocaleLowerCase();
@@ -63,7 +70,16 @@ class SupabaseDataStore {
   async getStudyLog(id) { return (await this.listStudyLogs()).find(row => Number(row.id) === Number(id)) || null; }
   async createStudyLog(input, now = new Date()) { const title = String(input.title || '').trim(), summary = String(input.summary || '').trim(); if (!title || !summary) throw new Error('記録タイトルと学習要約を入力してください'); const data = { id: await this.nextId('english_shelf_study_logs'), recorded_at: now.toISOString(), title, summary, mastery_note: String(input.mastery_note || '').trim(), user_note: '', curriculum_unit_id: input.curriculum_unit_id === '' || input.curriculum_unit_id == null ? null : Number(input.curriculum_unit_id), created_at: now.toISOString() }; return (await this.request('english_shelf_study_logs', '', { method: 'POST', body: data }))[0]; }
   async updateStudyLogNote(id, note) { await this.request('english_shelf_study_logs', `?id=eq.${Number(id)}`, { method: 'PATCH', body: { user_note: String(note || '').trim() } }); return this.getStudyLog(id); }
-  async counts() { return { words: (await this.all('english_shelf_words')).length, sentences: (await this.all('english_shelf_sentences')).length }; }
+  async counts() {
+    const [words, sentences, curriculumUnits, curriculumRelations, studyLogs] = await Promise.all([
+      this.all('english_shelf_words'),
+      this.all('english_shelf_sentences'),
+      this.all('english_shelf_curriculum_units'),
+      this.all('english_shelf_curriculum_unit_grammar_items'),
+      this.all('english_shelf_study_logs')
+    ]);
+    return { words: words.length, sentences: sentences.length, curriculum_units: curriculumUnits.length, curriculum_unit_grammar_items: curriculumRelations.length, study_logs: studyLogs.length };
+  }
   close() {}
 }
 

@@ -25,5 +25,7 @@ test('web bridge uses only public Supabase settings and hides desktop-only migra
   assert.match(webApi, /VITE_SUPABASE_URL/);
   assert.match(webApi, /VITE_SUPABASE_PUBLISHABLE_KEY/);
   assert.doesNotMatch(webApi, /service.role|sb_secret|database.password/i);
+  assert.match(webApi, /english_shelf_curriculum_unit_grammar_items: 'unit_id\.asc,grammar_item_id\.asc'/);
+  assert.match(webApi, /all\('english_shelf_curriculum_unit_grammar_items', 'unit_id\.asc,grammar_item_id\.asc'\)/);
   assert.match(app, /!isWeb && <section className="settings-card migration-card"/);
 });
