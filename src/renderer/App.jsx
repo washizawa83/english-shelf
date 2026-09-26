@@ -137,14 +137,14 @@ function EntryDialog({ open, onOpenChange, kind, entry, onSaved }) {
 
 function LibraryEntryCard({ kind, entry, onEdit }) {
   const [meaningVisible, setMeaningVisible] = useState(false);
-  const word = kind === 'words';
+  const word = kind === 'words', meaning = entry.meaning || '未登録';
   return <article className={`entry-card${word ? ' word-entry-card' : ' sentence-entry-card'}`} data-id={entry.id}>
     <div className="entry-card-head"><strong>{word ? entry.vocabulary : entry.title}</strong>{word && <span className="level-badge">忘却 Lv.{entry.forgetting_level || 1}</span>}</div>
     {word && <div className="entry-field"><b>変形</b><span className="inflection-list">{splitInflections(entry.inflection).map((form, index) => <span className="inflection-chip" key={`${entry.id}-${index}`}>{form}</span>)}</span></div>}
-    {meaningVisible && <div className="entry-field meaning-field"><b>意味</b><span>{entry.meaning || '未登録'}</span></div>}
+    <div className="entry-field meaning-field"><b>意味</b><span className="meaning-value-row"><span className="meaning-value-shell"><span className={`meaning-text${meaningVisible ? '' : ' concealed'}`} aria-hidden={!meaningVisible}>{meaning}</span><span className={`meaning-mask${meaningVisible ? ' concealed' : ''}`} aria-hidden="true">••••••</span></span><Button type="button" variant="ghost" size="icon" className="meaning-toggle" data-toggle-meaning aria-label={meaningVisible ? '意味を隠す' : '意味を表示'} title={meaningVisible ? '意味を隠す' : '意味を表示'} aria-expanded={meaningVisible} onClick={() => setMeaningVisible(value => !value)}>{meaningVisible ? <EyeOff size={17} /> : <Eye size={17} />}</Button></span></div>
     {word && <div className="entry-field"><b>例文</b><span>{entry.example || '未登録'}</span></div>}
     {!word && entry.similar_sentences && <small>{entry.similar_sentences}</small>}
-    <div className="entry-card-footer"><span>{word && <><b>最終復習日</b> {formatReviewDate(entry.last_reviewed_at)}</>}</span><span className="entry-card-actions"><Button type="button" variant="ghost" size="sm" data-toggle-meaning aria-expanded={meaningVisible} onClick={() => setMeaningVisible(value => !value)}>{meaningVisible ? <EyeOff size={15} /> : <Eye size={15} />}{meaningVisible ? '意味を隠す' : '意味を表示'}</Button><Button type="button" variant="outline" size="sm" data-edit-entry onClick={() => onEdit(entry.id)}><Pencil size={14} />編集</Button></span></div>
+    <div className="entry-card-footer"><span>{word && <><b>最終復習日</b> {formatReviewDate(entry.last_reviewed_at)}</>}</span><span className="entry-card-actions"><Button type="button" variant="ghost" size="icon" className="entry-edit-button" data-edit-entry aria-label={`${word ? '単語' : '英文'}を編集`} title={`${word ? '単語' : '英文'}を編集`} onClick={() => onEdit(entry.id)}><Pencil size={17} /></Button></span></div>
   </article>;
 }
 

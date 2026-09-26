@@ -15,7 +15,7 @@ app.whenReady().then(async () => {
     fs.createReadStream(filename).pipe(response);
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  const window = new BrowserWindow({ show: false, width: 390, height: 844, webPreferences: { contextIsolation: true, nodeIntegration: false } });
+  const window = new BrowserWindow({ show: false, width: 320, height: 720, webPreferences: { contextIsolation: true, nodeIntegration: false } });
   window.webContents.on('console-message', event => console.error(`[renderer:${event.level}] ${event.message}`));
   await window.loadURL(`http://127.0.0.1:${server.address().port}/`);
   const result = await window.webContents.executeJavaScript(`(async () => {
@@ -30,8 +30,23 @@ app.whenReady().then(async () => {
     document.querySelector('[data-kind="study-logs"]')?.click();
     await new Promise(resolve => setTimeout(resolve, 80));
     const dateControl = document.querySelector('.date-input-control');
+    const dateInput = document.querySelector('#study-log-date-filter');
     const dateRect = dateControl?.getBoundingClientRect();
-    const dateFitsViewport = Boolean(dateRect && dateRect.left >= 0 && dateRect.right <= document.documentElement.clientWidth);
+    const dateInputRect = dateInput?.getBoundingClientRect();
+    const setDateValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    setDateValue.call(dateInput, '2026-09-26');
+    dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 80));
+    const dateClear = document.querySelector('#clear-study-log-date');
+    const dateClearRect = dateClear?.getBoundingClientRect();
+    const viewportWidth = document.documentElement.clientWidth;
+    const dateFitsViewport = Boolean(dateRect && dateInputRect && dateClearRect
+      && dateRect.left >= 0 && dateRect.right <= viewportWidth
+      && dateInputRect.left >= 0 && dateInputRect.right <= viewportWidth
+      && dateClearRect.left >= 0 && dateClearRect.right <= viewportWidth
+      && dateControl.scrollWidth <= dateControl.clientWidth
+      && !dateClear.hidden);
     document.querySelector('[data-kind="settings"]')?.click();
     await new Promise(resolve => setTimeout(resolve, 30));
     return {

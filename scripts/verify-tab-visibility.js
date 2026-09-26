@@ -87,13 +87,30 @@ app.whenReady().then(async () => {
       const addButtonVisible = document.querySelector('#add-entry')?.textContent === '単語を追加';
       const firstWordCard = document.querySelector('.word-entry-card');
       const wordCardComplete = Boolean(firstWordCard?.querySelector('.inflection-chip'))
-        && ['変形', '例文', '最終復習日', '忘却 Lv.', '意味を表示', '編集'].every(label => firstWordCard.innerText.includes(label));
-      const wordMeaningHiddenByDefault = !firstWordCard?.querySelector('.meaning-field')
-        && !firstWordCard?.innerText.includes('日本語訳');
+        && ['変形', '意味', '例文', '最終復習日', '忘却 Lv.'].every(label => firstWordCard.innerText.includes(label));
+      const editIconButton = firstWordCard?.querySelector('[data-edit-entry]');
+      const editUsesAccessibleIconButton = editIconButton?.innerText.trim() === ''
+        && editIconButton?.getAttribute('aria-label') === '単語を編集'
+        && editIconButton?.querySelector('svg')
+        && editIconButton.getBoundingClientRect().width >= 40
+        && editIconButton.getBoundingClientRect().height >= 40
+        && getComputedStyle(editIconButton).borderColor === 'rgba(0, 0, 0, 0)';
+      const wordMeaningField = firstWordCard?.querySelector('.meaning-field');
+      const wordHeightBeforeMeaningToggle = firstWordCard?.getBoundingClientRect().height;
+      const wordMeaningHiddenByDefault = Boolean(wordMeaningField)
+        && getComputedStyle(wordMeaningField.querySelector('.meaning-text')).visibility === 'hidden'
+        && getComputedStyle(wordMeaningField.querySelector('.meaning-mask')).visibility === 'visible'
+        && wordMeaningField.querySelector('[data-toggle-meaning]')?.getAttribute('aria-expanded') === 'false';
+      const wordMeaningLabelPositions = [...firstWordCard.querySelectorAll('.entry-field > b')]
+        .map(label => label.getBoundingClientRect().left);
+      const wordMeaningLabelAligned = wordMeaningLabelPositions.length === 3
+        && wordMeaningLabelPositions.every(left => Math.abs(left - wordMeaningLabelPositions[0]) < 0.5);
       firstWordCard?.querySelector('[data-toggle-meaning]')?.click();
       await new Promise(resolve => setTimeout(resolve, 30));
-      const wordMeaningCanToggle = Boolean(firstWordCard?.querySelector('.meaning-field'))
-        && firstWordCard?.querySelector('[data-toggle-meaning]')?.getAttribute('aria-expanded') === 'true';
+      const wordMeaningCanToggle = getComputedStyle(wordMeaningField?.querySelector('.meaning-text')).visibility === 'visible'
+        && getComputedStyle(wordMeaningField?.querySelector('.meaning-mask')).visibility === 'hidden'
+        && wordMeaningField?.querySelector('[data-toggle-meaning]')?.getAttribute('aria-expanded') === 'true';
+      const wordHeightStableOnMeaningToggle = Math.abs(firstWordCard.getBoundingClientRect().height - wordHeightBeforeMeaningToggle) < 0.5;
       document.querySelector('#add-entry')?.click();
       await new Promise(resolve => setTimeout(resolve, 80));
       const addDialog = document.querySelector('#entry-dialog');
@@ -116,11 +133,16 @@ app.whenReady().then(async () => {
       document.querySelector('[data-kind="sentences"]')?.click();
       await new Promise(resolve => setTimeout(resolve, 250));
       const firstSentenceCard = document.querySelector('.sentence-entry-card');
+      const sentenceMeaningField = firstSentenceCard?.querySelector('.meaning-field');
+      const sentenceHeightBeforeMeaningToggle = firstSentenceCard?.getBoundingClientRect().height;
       const sentenceMeaningHiddenByDefault = Boolean(firstSentenceCard)
-        && !firstSentenceCard.querySelector('.meaning-field');
+        && getComputedStyle(sentenceMeaningField?.querySelector('.meaning-text')).visibility === 'hidden'
+        && getComputedStyle(sentenceMeaningField?.querySelector('.meaning-mask')).visibility === 'visible';
       firstSentenceCard?.querySelector('[data-toggle-meaning]')?.click();
       await new Promise(resolve => setTimeout(resolve, 30));
-      const sentenceMeaningCanToggle = Boolean(firstSentenceCard?.querySelector('.meaning-field'));
+      const sentenceMeaningCanToggle = getComputedStyle(sentenceMeaningField?.querySelector('.meaning-text')).visibility === 'visible'
+        && sentenceMeaningField?.querySelector('[data-toggle-meaning]')?.getAttribute('aria-expanded') === 'true';
+      const sentenceHeightStableOnMeaningToggle = Math.abs(firstSentenceCard.getBoundingClientRect().height - sentenceHeightBeforeMeaningToggle) < 0.5;
       document.querySelector('[data-kind="curriculum"]').click();
       await new Promise(resolve => setTimeout(resolve, 100));
       const library = document.querySelector('#library-workspace');
@@ -211,8 +233,11 @@ app.whenReady().then(async () => {
         libraryUsesFullWidth,
         addButtonVisible,
         wordCardComplete,
+        editUsesAccessibleIconButton,
         wordMeaningHiddenByDefault,
+        wordMeaningLabelAligned,
         wordMeaningCanToggle,
+        wordHeightStableOnMeaningToggle,
         addModalOpen,
         addForgettingLevelHidden,
         addLevelOneExplanation,
@@ -222,6 +247,7 @@ app.whenReady().then(async () => {
         editKeepsForgettingLevel,
         sentenceMeaningHiddenByDefault,
         sentenceMeaningCanToggle,
+        sentenceHeightStableOnMeaningToggle,
         libraryHidden: library.hidden,
         libraryDisplay: getComputedStyle(library).display,
         curriculumHidden: curriculum.hidden,
@@ -283,8 +309,11 @@ app.whenReady().then(async () => {
     && result.libraryUsesFullWidth
     && result.addButtonVisible
     && result.wordCardComplete
+    && result.editUsesAccessibleIconButton
     && result.wordMeaningHiddenByDefault
+    && result.wordMeaningLabelAligned
     && result.wordMeaningCanToggle
+    && result.wordHeightStableOnMeaningToggle
     && result.addModalOpen
     && result.addForgettingLevelHidden
     && result.addLevelOneExplanation
@@ -294,6 +323,7 @@ app.whenReady().then(async () => {
     && result.editKeepsForgettingLevel
     && result.sentenceMeaningHiddenByDefault
     && result.sentenceMeaningCanToggle
+    && result.sentenceHeightStableOnMeaningToggle
     && !result.menuBarVisible
     && result.libraryDisplay === 'none'
     && result.curriculumHidden

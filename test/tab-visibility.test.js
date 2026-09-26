@@ -63,7 +63,12 @@ test('word cards and forms expose every Notion word property', () => {
   assert.match(app, /忘却 Lv\./);
   assert.match(app, /data-toggle-meaning/);
   assert.match(app, /data-edit-entry/);
+  assert.match(app, /className="entry-edit-button"/);
+  assert.match(app, /aria-label=\{`\$\{word \? '単語' : '英文'\}を編集`\}/);
   assert.match(app, /useState\(false\)/);
+  assert.match(app, /meaning-mask/);
+  assert.match(app, /••••••/);
+  assert.match(app, /meaning-text\$\{meaningVisible \? '' : ' concealed'\}/);
 });
 
 test('mobile navigation uses icons and pull-to-refresh is connected', () => {
