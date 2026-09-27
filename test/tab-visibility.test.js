@@ -126,7 +126,7 @@ test('study log content is read-only while the learner memo remains editable', (
   assert.match(app, /log\.id === Number\(selectedId\)/);
   assert.match(app, /onClick=\{\(\) => onSelect\(log\.id\)\}/);
   assert.match(app, /id="back-to-study-logs"/);
-  assert.match(app, /\{selected\s*\? <div className="study-log-detail-screen"/);
+  assert.match(app, /\{selected\s*\? <div className="study-log-detail-screen[^\"]*"/);
 });
 
 test('every date input uses the shared empty-state guidance', () => {
@@ -135,6 +135,14 @@ test('every date input uses the shared empty-state guidance', () => {
   assert.match(app, /<DateInput name="last_reviewed_at"/);
   assert.match(app, /<DateInput wrapperClassName="date-input-control"/);
   assert.match(app, /date-input-shell/);
+});
+
+test('detail screens support a left-edge swipe back gesture', () => {
+  assert.match(app, /function useEdgeSwipeBack/);
+  assert.match(app, /touch\.clientX <= 28/);
+  assert.match(app, /x >= 72 && x > y \* 1\.35/);
+  assert.equal((app.match(/data-edge-swipe-back/g) || []).length, 2);
+  assert.match(css, /\.edge-swipe-back\s*\{[^}]*touch-action:pan-y/);
 });
 
 test('storage status appears only in settings, not in a global header', () => {

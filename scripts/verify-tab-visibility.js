@@ -63,6 +63,21 @@ app.whenReady().then(async () => {
       const formFitsDialog = dialog => Boolean(dialog && fitsViewport(dialog)
         && dialog.scrollWidth <= dialog.clientWidth
         && [...dialog.querySelectorAll('input, textarea, button, [role="combobox"]')].every(fitsViewport));
+      const swipeFromLeft = async element => {
+        if (!element) return false;
+        const dispatchTouch = (type, touches, changedTouches) => {
+          const event = new Event(type, { bubbles: true, cancelable: true });
+          Object.defineProperty(event, 'touches', { value: touches });
+          Object.defineProperty(event, 'changedTouches', { value: changedTouches });
+          element.dispatchEvent(event);
+        };
+        const start = { clientX: 8, clientY: 260 }, end = { clientX: 116, clientY: 266 };
+        dispatchTouch('touchstart', [start], [start]);
+        dispatchTouch('touchmove', [end], [end]);
+        dispatchTouch('touchend', [], [end]);
+        await new Promise(resolve => setTimeout(resolve, 80));
+        return true;
+      };
       const setDateValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
       const verifyDateInput = async input => {
         if (!input) return false;
@@ -313,7 +328,10 @@ app.whenReady().then(async () => {
         && detailView.querySelector('.finish-status')?.innerText.includes('90%');
       const plainLanguageUnitOne = detailView.innerText.includes('主語のあとに動詞')
         && !['Subject', 'Verb', 'S + V', 'SV', 'SVO', '目的語', '文型'].some(term => detailView.innerText.includes(term));
-      document.querySelector('#back-to-curriculum')?.click();
+      await swipeFromLeft(detailView);
+      const curriculumSwipeBack = !detailView || detailView.hidden
+        ? Boolean(document.querySelector('#curriculum-list'))
+        : getComputedStyle(detailView).display === 'none';
       const linkedUnitCard = [...document.querySelectorAll('.curriculum-card')].find(card => card.querySelector('h3')?.textContent === '形容詞・副詞');
       linkedUnitCard?.click();
       await new Promise(resolve => setTimeout(resolve, 50));
@@ -337,8 +355,9 @@ app.whenReady().then(async () => {
       const studyLogContentReadOnly = editableFields.length === 1
         && editableFields[0].id === 'study-log-user-note'
         && !studyLogView.querySelector('[data-action="edit"], [data-action="delete"]');
-      studyLogView.querySelector('#back-to-study-logs')?.click();
-      await new Promise(resolve => setTimeout(resolve, 80));
+      await swipeFromLeft(studyLogView.querySelector('.study-log-detail-screen'));
+      const studyLogSwipeBack = Boolean(studyLogView.querySelector('#study-log-list'))
+        && !studyLogView.querySelector('#study-log-detail');
       const dateInputBesideHeading = Boolean(studyLogView.querySelector('.study-log-heading #study-log-date-filter'));
       const dateFilter = studyLogView.querySelector('.date-filter');
       const dateFilterStyle = getComputedStyle(dateFilter);
@@ -462,6 +481,7 @@ app.whenReady().then(async () => {
         finishGuideVisible,
         masteryVisible,
         plainLanguageUnitOne,
+        curriculumSwipeBack,
         unitHasStudyLog,
         studyLogVisible,
         activityCells,
@@ -476,6 +496,7 @@ app.whenReady().then(async () => {
         studyLogDateConsistent,
         studyLogDetailVisible,
         detailReplacesList,
+        studyLogSwipeBack,
         listRestoredByBack,
         studyLogCardLeftAligned,
         listItemOpensDetail,
@@ -567,6 +588,7 @@ app.whenReady().then(async () => {
     && result.finishGuideVisible
     && result.masteryVisible
     && result.plainLanguageUnitOne
+    && result.curriculumSwipeBack
     && result.unitHasStudyLog
     && result.studyLogVisible
     && result.activityCells === 371
@@ -581,6 +603,7 @@ app.whenReady().then(async () => {
     && result.studyLogDateConsistent
     && result.studyLogDetailVisible
     && result.detailReplacesList
+    && result.studyLogSwipeBack
     && result.listRestoredByBack
     && result.studyLogCardLeftAligned
     && result.listItemOpensDetail

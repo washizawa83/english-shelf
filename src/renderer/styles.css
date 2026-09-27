@@ -40,6 +40,7 @@ select { border:1px solid #cfd8d0; background:#fbfcfa; border-radius:8px; paddin
 .study-log-view[hidden] { display:none; }
 .study-log-view { display:grid; grid-template-columns:1fr; gap:20px; }
 .study-log-detail-screen { display:grid; gap:14px; width:100%; }
+.edge-swipe-back { touch-action:pan-y; }
 .activity-panel { grid-column:1/-1; background:white; border:1px solid var(--line); border-radius:18px; padding:22px 26px; overflow:hidden; }
 .activity-heading { display:flex; justify-content:space-between; align-items:end; gap:18px; margin-bottom:14px; }
 .date-filter { display:flex; flex:0 1 290px; align-items:center; justify-content:flex-end; gap:9px; min-width:0; }
