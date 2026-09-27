@@ -90,6 +90,11 @@ test('English Shelf skill limits automatic learning records to meaningful milest
   const skill = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'english-shelf', 'skills', 'english-shelf-curriculum', 'SKILL.md'), 'utf8');
   assert.match(skill, /question is resolved and their understanding is confirmed/);
   assert.match(skill, /curriculum practice questions or a finishing quiz is completed/);
+  assert.match(skill, /Questions 1-3 are four-option multiple-choice questions/);
+  assert.match(skill, /Questions 4-7 are English sentence transformation questions/);
+  assert.match(skill, /Questions 8-10 ask the learner to translate a Japanese sentence into English/);
+  assert.match(skill, /Do not reuse the same source sentence, target answer, or transformation pattern/);
+  assert.match(skill, /update_curriculum_mastery.*correct_answers/);
   assert.doesNotMatch(skill, /mini practice|英文・文法/);
   assert.match(skill, /natural stopping point/);
   assert.match(skill, /Do not create a second record for the same learning in the same conversation/);

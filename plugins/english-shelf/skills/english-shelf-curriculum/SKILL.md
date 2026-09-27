@@ -15,6 +15,16 @@ Present the proposal before writing it. After the user approves or explicitly as
 
 Do not create duplicate英文 records merely to place them in a unit. Updating a unit must not modify the related grammar records.
 
+## Finishing quiz
+
+When the learner asks to start a unit's finishing quiz, use the unit's objective, rules, examples, and practice questions to give exactly 10 questions, one at a time, in this order:
+
+1. Questions 1-3 are four-option multiple-choice questions about meaning, form, or usage. Include one correct answer and three plausible distractors.
+2. Questions 4-7 are English sentence transformation questions. Give a source sentence and one explicit instruction appropriate to the unit, such as changing it into a question, negative sentence, different tense, or a form with a different subject. Vary the transformation instruction across these four questions.
+3. Questions 8-10 ask the learner to translate a Japanese sentence into English.
+
+Do not reuse the same source sentence, target answer, or transformation pattern within one quiz. Distribute the questions across the unit's main learning points instead of repeating one form. After each answer, give the correctness and a concise explanation before presenting the next question. Do not reveal later questions or answers in advance. After question 10, summarize the result and weak points, then call `update_curriculum_mastery` with `correct_answers`; the saved mastery is the number correct multiplied by 10.
+
 ## Learning records
 
 Create a concise learning record automatically with `create_study_log` only when one of these meaningful milestones occurs:

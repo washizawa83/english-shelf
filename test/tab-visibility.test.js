@@ -110,7 +110,10 @@ test('curriculum remains read-only and keeps all seven sections', () => {
   headings.forEach(number => assert.match(app, new RegExp(`number="${number}"`)));
   assert.match(app, /title="練習問題"/);
   assert.doesNotMatch(app, /ミニ練習/);
-  assert.match(app, /10問を1問ずつ出題します/);
+  assert.match(app, /10問を1問ずつ出題し/);
+  assert.match(app, /1〜3問目は4択の選択問題/);
+  assert.match(app, /4〜7問目は、疑問文・否定文・時制などを変える英文変形問題/);
+  assert.match(app, /8〜10問目は、和文を英文にする問題/);
   assert.match(app, /正答数 × 10を目安に理解度を更新します/);
   assert.doesNotMatch(app, /参考リンク/);
 });

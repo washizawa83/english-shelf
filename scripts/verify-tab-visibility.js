@@ -321,7 +321,10 @@ app.whenReady().then(async () => {
       const practiceCount = detailView.querySelectorAll('.practice-item').length;
       const hintCount = detailView.querySelectorAll('.practice-item .hint-details').length;
       const answerCount = detailView.querySelectorAll('.practice-item .answer-details').length;
-      const finishGuideVisible = detailView.querySelector('.finish-guide')?.innerText.includes('10問を1問ずつ出題します')
+      const finishGuideVisible = detailView.querySelector('.finish-guide')?.innerText.includes('1〜3問目は4択の選択問題')
+        && detailView.querySelector('.finish-guide')?.innerText.includes('4〜7問目は、疑問文・否定文・時制などを変える英文変形問題')
+        && detailView.querySelector('.finish-guide')?.innerText.includes('8〜10問目は、和文を英文にする問題')
+        && detailView.querySelector('.finish-guide')?.innerText.includes('10問を1問ずつ出題し')
         && detailView.querySelector('.finish-guide')?.innerText.includes('正答数 × 10を目安に理解度を更新します');
       const masteryVisible = detailView.querySelector('.mastery-badge')?.innerText === '理解度 90%'
         && detailView.querySelector('.finish-status')?.innerText.includes('現在の理解度')
