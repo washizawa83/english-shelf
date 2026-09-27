@@ -578,7 +578,7 @@ app.whenReady().then(async () => {
     && result.detailVisible
     && result.detailHeadings.length === 7
     && result.detailHeadings[3] === '04例文'
-    && result.detailHeadings[4] === '05ミニ練習'
+    && result.detailHeadings[4] === '05練習問題'
     && result.detailHeadings[5] === '06仕上げ'
     && result.detailHeadings[6] === '07関連する英文メモ'
     && result.exampleCount === 5

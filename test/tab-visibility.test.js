@@ -108,6 +108,8 @@ test('curriculum remains read-only and keeps all seven sections', () => {
   assert.doesNotMatch(app, /saveCurriculum|moveCurriculum|linkCurriculumGrammar|unlinkCurriculumGrammar/);
   const headings = ['01', '02', '03', '04', '05', '06', '07'];
   headings.forEach(number => assert.match(app, new RegExp(`number="${number}"`)));
+  assert.match(app, /title="練習問題"/);
+  assert.doesNotMatch(app, /ミニ練習/);
   assert.match(app, /10問を1問ずつ出題します/);
   assert.match(app, /正答数 × 10を目安に理解度を更新します/);
   assert.doesNotMatch(app, /参考リンク/);
