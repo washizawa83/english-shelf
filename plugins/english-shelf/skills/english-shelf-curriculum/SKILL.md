@@ -1,11 +1,11 @@
 ---
 name: english-shelf-curriculum
-description: Manage an English Shelf curriculum and selectively capture meaningful learning progress. Use for study plans, unit study, practice or finishing quizzes, curriculum organization, and concise learning records tied to existing local content.
+description: Manage an English Shelf curriculum and selectively capture meaningful learning progress. Use for study plans, unit study, practice questions or finishing quizzes, curriculum organization, and concise learning records tied to existing local content.
 ---
 
 # English Shelf Curriculum
 
-Use `get_curriculum_context` to read the current units and independent英文・文法 items. Propose a concise sequence of units with goals and the existing grammar items each unit should reference.
+Use `get_curriculum_context` to read the current units and independent英文 items. Propose a concise sequence of units with goals and the existing grammar items each unit should reference.
 
 Present the proposal before writing it. After the user approves or explicitly asks to save it:
 
@@ -13,14 +13,14 @@ Present the proposal before writing it. After the user approves or explicitly as
 2. Relate existing items with `link_grammar_to_unit`; a grammar item may belong to multiple units.
 3. Use `reorder_curriculum_units` when the complete order changes.
 
-Do not create duplicate英文・文法 records merely to place them in a unit. Updating a unit must not modify the related grammar records.
+Do not create duplicate英文 records merely to place them in a unit. Updating a unit must not modify the related grammar records.
 
 ## Learning records
 
 Create a concise learning record automatically with `create_study_log` only when one of these meaningful milestones occurs:
 
 1. A learner's question is resolved and their understanding is confirmed, such as by an acknowledgement or successful application.
-2. A mini practice or finishing quiz is completed.
+2. A set of curriculum practice questions or a finishing quiz is completed.
 3. A unit study session reaches a natural stopping point and has a stable takeaway worth preserving.
 
 Do not record every utterance, interim correction, routine chat, or unanswered explanation. Consolidate related turns into one short record for the learning outcome. Do not create a second record for the same learning in the same conversation; track what this conversation has already saved, and use `list_study_logs` when prior records need to be checked. Use `get_study_log` when the full content of a prior record is needed.

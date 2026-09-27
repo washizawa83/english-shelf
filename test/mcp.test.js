@@ -89,7 +89,8 @@ test('MCP server exposes CRUD and review tools against the shared schema', async
 test('English Shelf skill limits automatic learning records to meaningful milestones', () => {
   const skill = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'english-shelf', 'skills', 'english-shelf-curriculum', 'SKILL.md'), 'utf8');
   assert.match(skill, /question is resolved and their understanding is confirmed/);
-  assert.match(skill, /mini practice or finishing quiz is completed/);
+  assert.match(skill, /curriculum practice questions or a finishing quiz is completed/);
+  assert.doesNotMatch(skill, /mini practice|英文・文法/);
   assert.match(skill, /natural stopping point/);
   assert.match(skill, /Do not create a second record for the same learning in the same conversation/);
   assert.match(skill, /記録しないで/);

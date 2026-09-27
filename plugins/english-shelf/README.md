@@ -4,7 +4,7 @@ The plugin uses the same local SQLite database as the desktop app. No OpenAI API
 
 Shortest curriculum workflow in Codex:
 
-1. Ask: 「今ある英文・文法から、学習カリキュラムを提案して」
+1. Ask: 「今ある英文から、学習カリキュラムを提案して」
 2. Review the proposed units, order, goals, and relations.
 3. Ask: 「この案をEnglish Shelfに保存して」
 
