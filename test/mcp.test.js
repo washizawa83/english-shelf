@@ -100,10 +100,14 @@ test('English Shelf skill limits automatic learning records to meaningful milest
   assert.match(skill, /each missed question number, the learner's answer, the correct answer/);
   assert.match(skill, /Always set `curriculum_unit_id` to the unit used for the quiz/);
   assert.match(skill, /must never be left unlinked/);
+    assert.match(skill, /every completed finishing-quiz attempt as a separate learning event/);
+    assert.match(skill, /including later in the same conversation, create a new record for that attempt/);
+    assert.match(skill, /multiple finishing-quiz learning records/);
   assert.match(skill, /Do not populate `user_note`/);
   assert.doesNotMatch(skill, /mini practice|英文・文法/);
   assert.match(skill, /natural stopping point/);
   assert.match(skill, /Do not create a second record for the same learning in the same conversation/);
+    assert.match(skill, /duplicate-prevention rule does not apply to separately completed finishing-quiz attempts/);
   assert.match(skill, /記録しないで/);
   assert.match(skill, /omit it rather than guessing/);
   assert.match(skill, /Never populate or overwrite it during automatic recording/);

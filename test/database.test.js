@@ -108,6 +108,12 @@ test('curriculum units are ordered and relate grammar items many-to-many', () =>
   assert.equal(noted.mastery_note, '基本を理解');
   assert.equal(db.listStudyLogs()[0].id, log.id);
   assert.equal(db.getCurriculumUnit(first.id).study_logs[0].id, log.id);
+  const retryLog = db.createStudyLog({ title: '依頼表現の仕上げ（2回目）', summary: '同じ単元の仕上げに再挑戦した。', mastery_note: '前回より改善', curriculum_unit_id: first.id }, new Date('2026-09-26T04:00:00.000Z'));
+  const linkedAttempts = db.getCurriculumUnit(first.id).study_logs;
+  const listedAttempts = db.listStudyLogs().filter(item => item.curriculum_unit_id === first.id);
+  assert.notEqual(retryLog.id, log.id);
+  assert.deepEqual(linkedAttempts.map(item => item.id), [retryLog.id, log.id]);
+  assert.deepEqual(listedAttempts.map(item => item.id), [retryLog.id, log.id]);
   db.moveCurriculumUnit(second.id, 'up');
   assert.equal(db.listCurriculumUnits()[0].id, second.id);
   assert.equal(db.saveCurriculumUnit({ ...first, status: '完了' }).status, '完了');

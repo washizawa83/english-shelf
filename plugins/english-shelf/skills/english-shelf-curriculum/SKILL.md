@@ -27,6 +27,8 @@ Do not reuse the same source sentence, target answer, or transformation pattern 
 
 Unless the learner opted out of recording, immediately create exactly one learning record for the completed quiz with `create_study_log`. Use a short title identifying the unit and finishing quiz. The `summary` must include the score; a concise numbered account of what each question asked, its question type, and the learning point tested; and an incorrect-answer section listing each missed question number, the learner's answer, the correct answer, and a brief correction. If every answer was correct, explicitly record that there were no incorrect answers. Always set `curriculum_unit_id` to the unit used for the quiz; a finishing-quiz record must never be left unlinked. Do not populate `user_note`.
 
+Treat every completed finishing-quiz attempt as a separate learning event. If the learner completes the same unit's quiz again, including later in the same conversation, create a new record for that attempt and link it to the same `curriculum_unit_id`. Never overwrite, reuse, or suppress an earlier attempt's record. The unit may therefore have multiple finishing-quiz learning records, ordered by their automatic timestamps.
+
 ## Learning records
 
 Create a concise learning record automatically with `create_study_log` only when one of these meaningful milestones occurs:
@@ -35,7 +37,7 @@ Create a concise learning record automatically with `create_study_log` only when
 2. A set of curriculum practice questions or a finishing quiz is completed.
 3. A unit study session reaches a natural stopping point and has a stable takeaway worth preserving.
 
-Do not record every utterance, interim correction, routine chat, or unanswered explanation. Consolidate related turns into one short record for the learning outcome. Do not create a second record for the same learning in the same conversation; track what this conversation has already saved, and use `list_study_logs` when prior records need to be checked. Use `get_study_log` when the full content of a prior record is needed.
+Do not record every utterance, interim correction, routine chat, or unanswered explanation. Consolidate related turns into one short record for the learning outcome. Do not create a second record for the same learning in the same conversation; track what this conversation has already saved, and use `list_study_logs` when prior records need to be checked. This duplicate-prevention rule does not apply to separately completed finishing-quiz attempts. Use `get_study_log` when the full content of a prior record is needed.
 
 Use a short `title` and a compact `summary` that captures what was learned. Add `mastery_note` only when the learner demonstrated understanding, a quiz exposed a gap, or another useful mastery signal exists. Set `curriculum_unit_id` when the related unit is clear from the study context; omit it rather than guessing when the relationship is unclear.
 
