@@ -56,18 +56,24 @@ function formatReviewDate(value) {
 
 function useEdgeSwipeBack(onBack, enabled = true) {
   const start = useRef(null);
+  const complete = touch => {
+    const origin = start.current;
+    if (!origin || !touch) return false;
+    const x = touch.clientX - origin.x, y = Math.abs(touch.clientY - origin.y);
+    if (x >= 48 && x > y * 1.05) { start.current = null; onBack(); return true; }
+    if (x < -8 || (y >= 48 && y > Math.max(0, x))) start.current = null;
+    return false;
+  };
   return {
     onTouchStart: event => {
       if (!enabled || event.touches.length !== 1) { start.current = null; return; }
       const touch = event.touches[0];
-      start.current = touch.clientX <= 28 ? { x: touch.clientX, y: touch.clientY } : null;
+      start.current = touch.clientX <= 64 ? { x: touch.clientX, y: touch.clientY } : null;
     },
+    onTouchMove: event => { if (event.touches.length === 1) complete(event.touches[0]); },
     onTouchEnd: event => {
-      const origin = start.current;
+      if (event.changedTouches.length === 1) complete(event.changedTouches[0]);
       start.current = null;
-      if (!origin || event.changedTouches.length !== 1) return;
-      const touch = event.changedTouches[0], x = touch.clientX - origin.x, y = Math.abs(touch.clientY - origin.y);
-      if (x >= 72 && x > y * 1.35) onBack();
     },
     onTouchCancel: () => { start.current = null; }
   };
@@ -193,11 +199,10 @@ function CurriculumList({ hidden, units, onOpenUnit, onOpenGrammar }) {
 }
 
 function CurriculumDetail({ hidden, unit, onBack, onOpenGrammar, onOpenLog }) {
-  const swipeBack = useEdgeSwipeBack(onBack, Boolean(unit) && !hidden);
   if (!unit) return null;
   const mastery = Math.max(0, Math.min(100, Number(unit.mastery_percent) || 0)), details = unit.details || {};
   const Section = ({ number, title, children }) => <section><h3><span>{number}</span>{title}</h3>{children}</section>;
-  return <section className="curriculum-detail-view page-container edge-swipe-back" id="curriculum-detail-view" data-edge-swipe-back hidden={hidden} {...swipeBack}><Button id="back-to-curriculum" variant="ghost" className="back-button" onClick={onBack}><ChevronLeft size={17} />カリキュラム一覧へ</Button><article id="curriculum-detail" className="curriculum-detail">
+  return <section className="curriculum-detail-view page-container" id="curriculum-detail-view" hidden={hidden}><Button id="back-to-curriculum" variant="ghost" className="back-button" onClick={onBack}><ChevronLeft size={17} />カリキュラム一覧へ</Button><article id="curriculum-detail" className="curriculum-detail">
     <header className="detail-header"><div><p className="eyebrow">UNIT {unit.sort_order}</p><h2>{unit.title}</h2></div><span className="mastery-badge">理解度 {mastery}%</span></header><div className="detail-mastery"><div className="mastery-track" aria-label={`理解度 ${mastery}%`}><span style={{ width: `${mastery}%` }} /></div></div>
     <Section number="01" title="この単元でできるようになること"><p>{unit.learning_objective || '学習目標は未設定です。'}</p></Section>
     <Section number="02" title="まず知ること"><p>{details.basics || '基礎説明はまだ登録されていません。'}</p></Section>
@@ -212,9 +217,8 @@ function CurriculumDetail({ hidden, unit, onBack, onOpenGrammar, onOpenLog }) {
 function StudyLogs({ hidden, logs, selectedDate, onDate, selectedId, onSelect, onBack, onOpenUnit, onUpdateNote }) {
   const filtered = selectedDate ? logs.filter(log => formatDateKey(log.recorded_at) === selectedDate) : logs;
   const selected = filtered.find(log => log.id === Number(selectedId)) || null;
-  const swipeBack = useEdgeSwipeBack(onBack, Boolean(selected) && !hidden);
   return <section className={`study-log-view page-container${selected ? ' detail-open' : ''}`} id="study-log-view" hidden={hidden}>{selected
-    ? <div className="study-log-detail-screen edge-swipe-back" data-edge-swipe-back {...swipeBack}><Button id="back-to-study-logs" type="button" variant="ghost" className="back-button" onClick={onBack}><ChevronLeft size={17} />学習記録一覧へ</Button><section className="list-panel" id="study-log-detail"><StudyLogDetail log={selected} onOpenUnit={onOpenUnit} onUpdateNote={onUpdateNote} /></section></div>
+    ? <div className="study-log-detail-screen"><Button id="back-to-study-logs" type="button" variant="ghost" className="back-button" onClick={onBack}><ChevronLeft size={17} />学習記録一覧へ</Button><section className="list-panel" id="study-log-detail"><StudyLogDetail log={selected} onOpenUnit={onOpenUnit} onUpdateNote={onUpdateNote} /></section></div>
     : <aside className="list-panel"><div className="panel-heading study-log-heading"><span id="study-log-count" className="status">{selectedDate ? `${selectedDate} · ${filtered.length} 件` : `${filtered.length} 件`}</span><div className="date-filter"><span className="date-filter-label">日付指定</span><DateInput wrapperClassName="date-input-control" id="study-log-date-filter" aria-label="学習記録を日付で絞り込む" max={formatDateKey(new Date())} value={selectedDate} onChange={event => onDate(event.target.value)}><Button id="clear-study-log-date" className="date-clear-inside" type="button" variant="ghost" size="icon" aria-label="日付選択を解除" hidden={!selectedDate} onClick={() => onDate('')}>×</Button></DateInput></div></div>
       <div id="study-log-list" className="study-log-list">{filtered.length ? filtered.map(log => <Button variant="outline" className="study-log-card" data-study-log-id={log.id} key={log.id} onClick={() => onSelect(log.id)}><time className="study-log-card-date">{formatRecordedAt(log.recorded_at)}</time><span className="study-log-card-content"><strong>{log.title}</strong><span className="study-log-card-unit">{log.curriculum_unit_title || '関連単元なし'}</span></span></Button>) : <div className="empty">{selectedDate ? 'この日の学習記録はありません。' : '学習記録はまだありません。Codexに「今の話を記録して」と伝えると追加できます。'}</div>}</div></aside>}
   </section>;
@@ -351,9 +355,11 @@ export default function App() {
   async function finishPull() { if (pullStart.current == null) return; const distance = pullDistanceRef.current, shouldRefresh = distance >= 64; pullStart.current = null; pullDistanceRef.current = 0; if (!shouldRefresh) { if (distance >= 5) { setPullDistance(0); setPullStatus('idle'); } return; } setPullDistance(52); setPullStatus('refreshing'); const tasks = [refreshAll()]; if (view === 'words' || view === 'sentences') tasks.push(refreshLibrary(kind, search)); await Promise.allSettled(tasks); setPullStatus('done'); setPullDistance(0); setTimeout(() => setPullStatus('idle'), 900); }
   const selectedUnit = units.find(unit => unit.id === selectedUnitId);
   const activeTab = view === 'curriculum-detail' ? 'curriculum' : view;
+  const edgeSwipeEnabled = view === 'curriculum-detail' || (view === 'study-logs' && selectedLogId != null);
+  const detailSwipeBack = useEdgeSwipeBack(() => { if (view === 'curriculum-detail') setView('curriculum'); else closeStudyLog(); }, edgeSwipeEnabled);
   return <>
     <div className={`pull-refresh ${pullStatus}`} style={{ '--pull-distance': `${pullDistance}px` }} role="status" aria-live="polite">{pullStatus === 'refreshing' ? '更新中…' : pullStatus === 'done' ? '更新しました' : pullDistance >= 64 ? '離して更新' : '引き下げて更新'}</div>
-    <main className="app-shell" onTouchStart={beginPull} onTouchMove={movePull} onTouchEnd={finishPull} onTouchCancel={finishPull}><nav className="tabs" aria-label="メインナビゲーション">{tabs.map(({ id, label, Icon }) => <Button variant="ghost" className={`tab${activeTab === id ? ' active' : ''}`} data-kind={id} key={id} aria-label={label} title={label} onClick={() => navigate(id)}><Icon className="tab-icon" size={19} aria-hidden="true" /><span className="tab-label">{label}</span></Button>)}</nav>
+    <main className={`app-shell${edgeSwipeEnabled ? ' edge-swipe-back' : ''}`} data-edge-swipe-back={edgeSwipeEnabled ? 'active' : undefined} onTouchStart={event => { beginPull(event); detailSwipeBack.onTouchStart(event); }} onTouchMove={event => { movePull(event); detailSwipeBack.onTouchMove(event); }} onTouchEnd={event => { detailSwipeBack.onTouchEnd(event); finishPull(); }} onTouchCancel={() => { detailSwipeBack.onTouchCancel(); finishPull(); }}><nav className="tabs" aria-label="メインナビゲーション">{tabs.map(({ id, label, Icon }) => <Button variant="ghost" className={`tab${activeTab === id ? ' active' : ''}`} data-kind={id} key={id} aria-label={label} title={label} onClick={() => navigate(id)}><Icon className="tab-icon" size={19} aria-hidden="true" /><span className="tab-label">{label}</span></Button>)}</nav>
       <Summary hidden={view !== 'summary'} words={words} sentences={sentences} units={units} logs={logs} loadError={loadError} selectedDate={selectedDate} onSelectDate={selectActivityDate} onReview={startReview} />
       <Library hidden={view !== 'words' && view !== 'sentences'} kind={kind} entries={entries} search={search} onSearch={value => { setSearch(value); setLibraryStatus('検索中…'); }} levelFilter={levelFilters[kind]} onLevelFilter={value => setLevelFilters(previous => ({ ...previous, [kind]: value }))} status={libraryStatus} onAdd={() => { setEditingEntry(null); setEntryOpen(true); }} onEdit={editEntry} searchRef={searchRef} />
       <CurriculumList hidden={view !== 'curriculum'} units={units} onOpenUnit={openUnit} onOpenGrammar={id => editEntry(id, 'sentences')} />

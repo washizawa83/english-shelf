@@ -89,9 +89,9 @@ test('mobile navigation uses icons and pull-to-refresh is connected', () => {
   assert.match(app, /className="tab-icon"/);
   assert.match(app, /className="tab-label"/);
   assert.match(app, /className=\{`pull-refresh/);
-  assert.match(app, /onTouchStart=\{beginPull\}/);
-  assert.match(app, /onTouchMove=\{movePull\}/);
-  assert.match(app, /onTouchEnd=\{finishPull\}/);
+  assert.match(app, /onTouchStart=\{event => \{ beginPull\(event\);/);
+  assert.match(app, /onTouchMove=\{event => \{ movePull\(event\);/);
+  assert.match(app, /onTouchEnd=\{event => \{ detailSwipeBack\.onTouchEnd\(event\); finishPull\(\);/);
   assert.match(css, /@media \(max-width:760px\)[\s\S]*\.tabs \{[^}]*position:fixed;[^}]*bottom:0;/);
   assert.match(css, /grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
   assert.match(css, /\.tab-label \{[^}]*position:static;/);
@@ -139,9 +139,10 @@ test('every date input uses the shared empty-state guidance', () => {
 
 test('detail screens support a left-edge swipe back gesture', () => {
   assert.match(app, /function useEdgeSwipeBack/);
-  assert.match(app, /touch\.clientX <= 28/);
-  assert.match(app, /x >= 72 && x > y \* 1\.35/);
-  assert.equal((app.match(/data-edge-swipe-back/g) || []).length, 2);
+  assert.match(app, /touch\.clientX <= 64/);
+  assert.match(app, /x >= 48 && x > y \* 1\.05/);
+  assert.match(app, /onTouchMove: event =>/);
+  assert.match(app, /data-edge-swipe-back=\{edgeSwipeEnabled/);
   assert.match(css, /\.edge-swipe-back\s*\{[^}]*touch-action:pan-y/);
 });
 

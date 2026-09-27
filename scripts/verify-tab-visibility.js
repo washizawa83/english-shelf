@@ -71,7 +71,7 @@ app.whenReady().then(async () => {
           Object.defineProperty(event, 'changedTouches', { value: changedTouches });
           element.dispatchEvent(event);
         };
-        const start = { clientX: 8, clientY: 260 }, end = { clientX: 116, clientY: 266 };
+        const start = { clientX: 52, clientY: 260 }, end = { clientX: 108, clientY: 266 };
         dispatchTouch('touchstart', [start], [start]);
         dispatchTouch('touchmove', [end], [end]);
         dispatchTouch('touchend', [], [end]);
