@@ -8,6 +8,16 @@ const defaultOrders = {
   english_shelf_curriculum_unit_grammar_items: 'unit_id.asc,grammar_item_id.asc',
   english_shelf_study_logs: 'recorded_at.desc,id.desc'
 };
+const reviewIntervals = {
+  1: 20 * 60 * 1000,
+  2: 60 * 60 * 1000,
+  3: 9 * 60 * 60 * 1000,
+  4: 24 * 60 * 60 * 1000,
+  5: 2 * 24 * 60 * 60 * 1000,
+  6: 6 * 24 * 60 * 60 * 1000,
+  7: 30 * 24 * 60 * 60 * 1000,
+  8: 182 * 24 * 60 * 60 * 1000
+};
 const envSettings = { url: import.meta.env.VITE_SUPABASE_URL || '', publishableKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '' };
 
 function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; } }
@@ -28,6 +38,14 @@ async function all(table, order = defaultOrders[table] || '') { return request(t
 async function deviceAccessAuthorized() { return (await request('rpc/english_shelf_has_access', '', { method: 'POST', body: {} })) === true; }
 async function nextId(table) { const rows = await request(table, '?select=id&order=id.desc&limit=1'); return rows.length ? Number(rows[0].id) + 1 : 1; }
 async function list(kind, query = '') { const rows = await all(tables[kind], 'updated_at.desc,id.desc'), term = String(query).trim().toLocaleLowerCase(); return term ? rows.filter(row => Object.values(row).some(value => String(value ?? '').toLocaleLowerCase().includes(term))) : rows; }
+function isReviewDue(row, now = new Date()) {
+  if (!row.last_reviewed_at) return true;
+  const reviewedAt = new Date(row.last_reviewed_at).getTime();
+  if (!Number.isFinite(reviewedAt)) return true;
+  const numericLevel = Number(row.forgetting_level);
+  const level = Number.isInteger(numericLevel) && numericLevel >= 1 && numericLevel <= 8 ? numericLevel : 1;
+  return reviewedAt + reviewIntervals[level] <= now.getTime();
+}
 async function get(kind, id) { return (await request(tables[kind], `?select=*&id=eq.${Number(id)}&limit=1`))[0] || null; }
 async function save(kind, payload) {
   const word = kind === 'words', required = word ? 'vocabulary' : 'title'; if (!String(payload[required] || '').trim()) throw new Error('タイトル項目を入力してください。');
@@ -53,7 +71,7 @@ const webApi = {
   platform: 'web',
   initialView: hasUsableRuntime() ? 'summary' : 'settings',
   async list(kind, query) { if (!hasUsableRuntime()) return []; return list(kind, query); }, get, save,
-  async due(kind) { const rows = await list(kind); return rows.filter(row => !row.last_reviewed_at); },
+  async due(kind) { const rows = await list(kind); return rows.filter(row => isReviewDue(row)); },
   async review(kind, id, result) { const row = await get(kind, id); let level = Number(row.forgetting_level) || 1; if (result === 'easy') level = Math.min(8, level + 1); if (result === 'hard') level = Math.max(1, level - 1); return save(kind, { ...row, forgetting_level: level, last_reviewed_at: new Date().toISOString() }); },
   async listCurriculum() { return hasUsableRuntime() ? listCurriculum() : []; },
   async saveCurriculum() { throw new Error('Web画面ではカリキュラムを編集できません。'); }, async moveCurriculum() {}, async linkCurriculumGrammar() {}, async unlinkCurriculumGrammar() {},

@@ -83,6 +83,21 @@ test('web bridge preserves an existing iPhone authorization and loads every summ
   assert.ok(requests.some(request => request.url.includes('english_shelf_curriculum_unit_grammar_items?select=*&order=unit_id.asc,grammar_item_id.asc')));
 });
 
+test('web review queue includes overdue reviewed entries based on forgetting level', async () => {
+  const settings = { url: 'https://demo.supabase.co', publishableKey: `sb_publishable_${'d'.repeat(24)}` };
+  const rows = {
+    english_shelf_words: [
+      { id: 1, vocabulary: 'never reviewed', last_reviewed_at: '', forgetting_level: 8 },
+      { id: 2, vocabulary: 'overdue', last_reviewed_at: '2020-01-01T00:00:00.000Z', forgetting_level: 8 },
+      { id: 3, vocabulary: 'not due', last_reviewed_at: '2999-01-01T00:00:00.000Z', forgetting_level: 1 },
+      { id: 4, vocabulary: 'invalid date', last_reviewed_at: 'not-a-date', forgetting_level: 4 }
+    ]
+  };
+  const { api } = loadWebApi({ settings, runtime: { activeStore: 'supabase', accessToken: 'review-token', verification: null }, rows });
+  const due = await api.due('words');
+  assert.deepEqual(Array.from(due, row => row.id), [1, 2, 4]);
+});
+
 test('web bridge does not show a broken active state as an empty summary', async () => {
   const settings = { url: 'https://demo.supabase.co', publishableKey: `sb_publishable_${'b'.repeat(24)}` };
   const verification = { counts: { words: 31, sentences: 8, curriculum_units: 28, curriculum_unit_grammar_items: 0, study_logs: 2 } };
