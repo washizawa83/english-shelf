@@ -25,6 +25,8 @@ When the learner asks to start a unit's finishing quiz, use the unit's objective
 
 Do not reuse the same source sentence, target answer, or transformation pattern within one quiz. Distribute the questions across the unit's main learning points instead of repeating one form. After each answer, give the correctness and a concise explanation before presenting the next question. Do not reveal later questions or answers in advance. After question 10, summarize the result and weak points, then call `update_curriculum_mastery` with `correct_answers`; the saved mastery is the number correct multiplied by 10.
 
+Unless the learner opted out of recording, immediately create exactly one learning record for the completed quiz with `create_study_log`. Use a short title identifying the unit and finishing quiz. The `summary` must include the score; a concise numbered account of what each question asked, its question type, and the learning point tested; and an incorrect-answer section listing each missed question number, the learner's answer, the correct answer, and a brief correction. If every answer was correct, explicitly record that there were no incorrect answers. Always set `curriculum_unit_id` to the unit used for the quiz; a finishing-quiz record must never be left unlinked. Do not populate `user_note`.
+
 ## Learning records
 
 Create a concise learning record automatically with `create_study_log` only when one of these meaningful milestones occurs:

@@ -95,6 +95,12 @@ test('English Shelf skill limits automatic learning records to meaningful milest
   assert.match(skill, /Questions 8-10 ask the learner to translate a Japanese sentence into English/);
   assert.match(skill, /Do not reuse the same source sentence, target answer, or transformation pattern/);
   assert.match(skill, /update_curriculum_mastery.*correct_answers/);
+  assert.match(skill, /create exactly one learning record for the completed quiz/);
+  assert.match(skill, /what each question asked, its question type, and the learning point tested/);
+  assert.match(skill, /each missed question number, the learner's answer, the correct answer/);
+  assert.match(skill, /Always set `curriculum_unit_id` to the unit used for the quiz/);
+  assert.match(skill, /must never be left unlinked/);
+  assert.match(skill, /Do not populate `user_note`/);
   assert.doesNotMatch(skill, /mini practice|英文・文法/);
   assert.match(skill, /natural stopping point/);
   assert.match(skill, /Do not create a second record for the same learning in the same conversation/);
